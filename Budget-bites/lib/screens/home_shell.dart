@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/meal_repository.dart';
+import '../data/purchase_repository.dart';
 import 'catalog_screen.dart';
 import 'history_screen.dart';
 import 'meal_detail_screen.dart';
@@ -10,8 +11,13 @@ import 'settings_screen.dart';
 /// Holds the bottom tab bar and switches between the five main screens.
 class HomeShell extends StatefulWidget {
   final MealRepository mealRepository;
+  final PurchaseRepository purchaseRepository;
 
-  const HomeShell({super.key, required this.mealRepository});
+  const HomeShell({
+    super.key,
+    required this.mealRepository,
+    required this.purchaseRepository,
+  });
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -22,13 +28,22 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
-    // A screen is rebuilt each time its tab is opened, so the catalog
-    // always loads the latest meals from the database.
+    // A screen is rebuilt each time its tab is opened, so it always
+    // loads the latest data from the database.
     final screens = [
-      CatalogScreen(mealRepository: widget.mealRepository),
+      CatalogScreen(
+        mealRepository: widget.mealRepository,
+        purchaseRepository: widget.purchaseRepository,
+      ),
       MealEditorScreen(mealRepository: widget.mealRepository),
-      MealDetailScreen(mealRepository: widget.mealRepository),
-      const HistoryScreen(),
+      MealDetailScreen(
+        mealRepository: widget.mealRepository,
+        purchaseRepository: widget.purchaseRepository,
+      ),
+      HistoryScreen(
+        mealRepository: widget.mealRepository,
+        purchaseRepository: widget.purchaseRepository,
+      ),
       const SettingsScreen(),
     ];
 

@@ -29,7 +29,12 @@ class MealRepository {
     );
   }
 
+  /// Deletes a meal and all of its purchases.
+  /// Both deletes happen together, so we never keep half of them.
   Future<void> deleteMeal(int id) async {
-    await db.delete('Meal', where: 'id = ?', whereArgs: [id]);
+    await db.transaction((txn) async {
+      await txn.delete('PurchaseLog', where: 'mealId = ?', whereArgs: [id]);
+      await txn.delete('Meal', where: 'id = ?', whereArgs: [id]);
+    });
   }
 }

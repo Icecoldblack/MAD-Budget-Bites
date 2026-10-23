@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/meal_repository.dart';
+import '../data/purchase_repository.dart';
 import '../models/meal.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/meal_card.dart';
@@ -10,8 +11,13 @@ import 'meal_editor_screen.dart';
 /// Screen 1: list of meals, cuisine filter, and budget left.
 class CatalogScreen extends StatefulWidget {
   final MealRepository mealRepository;
+  final PurchaseRepository purchaseRepository;
 
-  const CatalogScreen({super.key, required this.mealRepository});
+  const CatalogScreen({
+    super.key,
+    required this.mealRepository,
+    required this.purchaseRepository,
+  });
 
   @override
   State<CatalogScreen> createState() => _CatalogScreenState();
@@ -75,6 +81,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
       MaterialPageRoute(
         builder: (_) => MealDetailScreen(
           mealRepository: widget.mealRepository,
+          purchaseRepository: widget.purchaseRepository,
           meal: meal,
         ),
       ),

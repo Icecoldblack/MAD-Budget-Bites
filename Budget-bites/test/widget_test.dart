@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:budget_bites/data/meal_repository.dart';
+import 'package:budget_bites/data/purchase_repository.dart';
 import 'package:budget_bites/main.dart';
 import 'package:budget_bites/models/meal.dart';
 import 'package:budget_bites/widgets/meal_card.dart';
@@ -12,10 +13,12 @@ import 'test_helpers.dart';
 void main() {
   late Database db;
   late MealRepository repository;
+  late PurchaseRepository purchaseRepository;
 
   setUp(() async {
     db = await openTestDatabase();
     repository = MealRepository(db);
+    purchaseRepository = PurchaseRepository(db);
   });
 
   tearDown(() async {
@@ -23,16 +26,23 @@ void main() {
   });
 
   Future<void> addFriedRice() async {
-    await repository.insertMeal(const Meal(
-      name: 'Veggie Fried Rice',
-      venueNote: 'Library cafe',
-      cuisine: 'Asian',
-      estimatedPriceMinor: 650,
-    ));
+    await repository.insertMeal(
+      const Meal(
+        name: 'Veggie Fried Rice',
+        venueNote: 'Library cafe',
+        cuisine: 'Asian',
+        estimatedPriceMinor: 650,
+      ),
+    );
   }
 
   testWidgets('every tab in the bottom bar opens its screen', (tester) async {
-    await tester.pumpWidget(BudgetBitesApp(mealRepository: repository));
+    await tester.pumpWidget(
+      BudgetBitesApp(
+        mealRepository: repository,
+        purchaseRepository: purchaseRepository,
+      ),
+    );
     await tester.pumpAndSettle();
 
     // The catalog is the first screen. The database is empty.
@@ -53,9 +63,15 @@ void main() {
     }
   });
 
-  testWidgets('adding a meal from the Add tab shows it in the catalog',
-      (tester) async {
-    await tester.pumpWidget(BudgetBitesApp(mealRepository: repository));
+  testWidgets('adding a meal from the Add tab shows it in the catalog', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      BudgetBitesApp(
+        mealRepository: repository,
+        purchaseRepository: purchaseRepository,
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(NavigationDestination, 'Add'));
@@ -87,7 +103,12 @@ void main() {
   });
 
   testWidgets('the meal form rejects a bad price', (tester) async {
-    await tester.pumpWidget(BudgetBitesApp(mealRepository: repository));
+    await tester.pumpWidget(
+      BudgetBitesApp(
+        mealRepository: repository,
+        purchaseRepository: purchaseRepository,
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(NavigationDestination, 'Add'));
@@ -117,7 +138,12 @@ void main() {
 
   testWidgets('a meal can be edited from its detail screen', (tester) async {
     await addFriedRice();
-    await tester.pumpWidget(BudgetBitesApp(mealRepository: repository));
+    await tester.pumpWidget(
+      BudgetBitesApp(
+        mealRepository: repository,
+        purchaseRepository: purchaseRepository,
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Veggie Fried Rice'));
@@ -142,7 +168,12 @@ void main() {
 
   testWidgets('a meal can be deleted after confirming', (tester) async {
     await addFriedRice();
-    await tester.pumpWidget(BudgetBitesApp(mealRepository: repository));
+    await tester.pumpWidget(
+      BudgetBitesApp(
+        mealRepository: repository,
+        purchaseRepository: purchaseRepository,
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Veggie Fried Rice'));

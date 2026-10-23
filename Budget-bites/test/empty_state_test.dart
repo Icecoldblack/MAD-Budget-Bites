@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:budget_bites/data/meal_repository.dart';
+import 'package:budget_bites/data/purchase_repository.dart';
 import 'package:budget_bites/models/meal.dart';
 import 'package:budget_bites/screens/catalog_screen.dart';
 import 'package:budget_bites/screens/history_screen.dart';
@@ -13,10 +14,12 @@ import 'test_helpers.dart';
 void main() {
   late Database db;
   late MealRepository repository;
+  late PurchaseRepository purchaseRepository;
 
   setUp(() async {
     db = await openTestDatabase();
     repository = MealRepository(db);
+    purchaseRepository = PurchaseRepository(db);
   });
 
   tearDown(() async {
@@ -24,20 +27,28 @@ void main() {
   });
 
   Future<void> addMeal(String name, String cuisine) async {
-    await repository.insertMeal(Meal(
-      name: name,
-      venueNote: '',
-      cuisine: cuisine,
-      estimatedPriceMinor: 500,
-    ));
+    await repository.insertMeal(
+      Meal(
+        name: name,
+        venueNote: '',
+        cuisine: cuisine,
+        estimatedPriceMinor: 500,
+      ),
+    );
   }
 
   Widget buildCatalog() {
-    return MaterialApp(home: CatalogScreen(mealRepository: repository));
+    return MaterialApp(
+      home: CatalogScreen(
+        mealRepository: repository,
+        purchaseRepository: purchaseRepository,
+      ),
+    );
   }
 
-  testWidgets('catalog shows an empty state when there are no meals',
-      (tester) async {
+  testWidgets('catalog shows an empty state when there are no meals', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildCatalog());
     await tester.pumpAndSettle();
 
@@ -69,8 +80,9 @@ void main() {
     expect(find.byType(MealCard), findsNWidgets(3));
   });
 
-  testWidgets('catalog shows "No meals match" when the filter has no meals',
-      (tester) async {
+  testWidgets('catalog shows "No meals match" when the filter has no meals', (
+    tester,
+  ) async {
     await addMeal('Pad Thai', 'Thai');
     await addMeal('Sandwich', 'American');
 
@@ -94,9 +106,18 @@ void main() {
     expect(find.text('Sandwich'), findsOneWidget);
   });
 
-  testWidgets('history shows an empty state when there are no purchases',
-      (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: HistoryScreen()));
+  testWidgets('history shows an empty state when there are no purchases', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HistoryScreen(
+          mealRepository: repository,
+          purchaseRepository: purchaseRepository,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
 
     expect(find.text('No purchases yet'), findsOneWidget);
   });

@@ -44,12 +44,14 @@ void main() {
 
   test('getAllMeals returns meals sorted by name', () async {
     await repository.insertMeal(burrito);
-    await repository.insertMeal(const Meal(
-      name: 'Apple Salad',
-      venueNote: '',
-      cuisine: 'American',
-      estimatedPriceMinor: 500,
-    ));
+    await repository.insertMeal(
+      const Meal(
+        name: 'Apple Salad',
+        venueNote: '',
+        cuisine: 'American',
+        estimatedPriceMinor: 500,
+      ),
+    );
 
     final meals = await repository.getAllMeals();
     expect(meals.map((meal) => meal.name), ['Apple Salad', 'Burrito Bowl']);
@@ -58,13 +60,15 @@ void main() {
   test('update changes a saved meal', () async {
     final id = await repository.insertMeal(burrito);
 
-    await repository.updateMeal(Meal(
-      id: id,
-      name: 'Burrito Bowl',
-      venueNote: 'Food court',
-      cuisine: 'Mexican',
-      estimatedPriceMinor: 1000,
-    ));
+    await repository.updateMeal(
+      Meal(
+        id: id,
+        name: 'Burrito Bowl',
+        venueNote: 'Food court',
+        cuisine: 'Mexican',
+        estimatedPriceMinor: 1000,
+      ),
+    );
 
     final meals = await repository.getAllMeals();
     expect(meals.first.estimatedPriceMinor, 1000);

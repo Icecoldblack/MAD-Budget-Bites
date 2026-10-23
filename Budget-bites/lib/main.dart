@@ -5,6 +5,7 @@ import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 import 'data/database_helper.dart';
 import 'data/meal_repository.dart';
+import 'data/purchase_repository.dart';
 import 'screens/home_shell.dart';
 
 Future<void> main() async {
@@ -16,13 +17,21 @@ Future<void> main() async {
   }
 
   final db = await DatabaseHelper.openAppDatabase();
-  runApp(BudgetBitesApp(mealRepository: MealRepository(db)));
+  runApp(BudgetBitesApp(
+    mealRepository: MealRepository(db),
+    purchaseRepository: PurchaseRepository(db),
+  ));
 }
 
 class BudgetBitesApp extends StatelessWidget {
   final MealRepository mealRepository;
+  final PurchaseRepository purchaseRepository;
 
-  const BudgetBitesApp({super.key, required this.mealRepository});
+  const BudgetBitesApp({
+    super.key,
+    required this.mealRepository,
+    required this.purchaseRepository,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +42,10 @@ class BudgetBitesApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
-      home: HomeShell(mealRepository: mealRepository),
+      home: HomeShell(
+        mealRepository: mealRepository,
+        purchaseRepository: purchaseRepository,
+      ),
     );
   }
 }
