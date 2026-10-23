@@ -80,6 +80,32 @@ void main() {
     expect(find.byType(MealCard), findsNWidgets(3));
   });
 
+  testWidgets('cuisines that differ only in case share one chip', (
+    tester,
+  ) async {
+    await addMeal('Burrito Bowl', 'Mexican');
+    await addMeal('Tacos', 'mexican');
+    await addMeal('Fried Rice', 'Asian');
+
+    await tester.pumpWidget(buildCatalog());
+    await tester.pumpAndSettle();
+
+    // Chips: All, Asian, and one Mexican chip.
+    expect(find.byType(ChoiceChip), findsNWidgets(3));
+
+    final mexicanChip = find.byWidgetPredicate(
+      (widget) =>
+          widget is ChoiceChip &&
+          (widget.label as Text).data!.toLowerCase() == 'mexican',
+    );
+    await tester.tap(mexicanChip);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MealCard), findsNWidgets(2));
+    expect(find.text('Burrito Bowl'), findsOneWidget);
+    expect(find.text('Tacos'), findsOneWidget);
+  });
+
   testWidgets('catalog shows "No meals match" when the filter has no meals', (
     tester,
   ) async {

@@ -93,4 +93,52 @@ void main() {
     expect(() => repository.insertMeal(badMeal), throwsA(anything));
     expect(await repository.getAllMeals(), isEmpty);
   });
+
+  Future<void> addMeal(String name, String cuisine) async {
+    await repository.insertMeal(
+      Meal(
+        name: name,
+        venueNote: '',
+        cuisine: cuisine,
+        estimatedPriceMinor: 500,
+      ),
+    );
+  }
+
+  test('getMealsByCuisine returns only that cuisine', () async {
+    await addMeal('Burrito Bowl', 'Mexican');
+    await addMeal('Tacos', 'Mexican');
+    await addMeal('Fried Rice', 'Asian');
+
+    final meals = await repository.getMealsByCuisine('Mexican');
+    expect(meals.map((meal) => meal.name), ['Burrito Bowl', 'Tacos']);
+  });
+
+  test('getMealsByCuisine ignores upper and lower case', () async {
+    await addMeal('Burrito Bowl', 'Mexican');
+    await addMeal('Tacos', 'mexican');
+
+    final meals = await repository.getMealsByCuisine('MEXICAN');
+    expect(meals.length, 2);
+  });
+
+  test('getMealsByCuisine returns nothing for an unknown cuisine', () async {
+    await addMeal('Burrito Bowl', 'Mexican');
+
+    expect(await repository.getMealsByCuisine('Thai'), isEmpty);
+  });
+
+  test('getCuisines lists each cuisine once, A to Z', () async {
+    await addMeal('Tacos', 'Mexican');
+    await addMeal('Burrito Bowl', 'mexican');
+    await addMeal('Fried Rice', 'Asian');
+    await addMeal('Sandwich', 'American');
+
+    final cuisines = await repository.getCuisines();
+    expect(cuisines.length, 3);
+    expect(cuisines[0], 'American');
+    expect(cuisines[1], 'Asian');
+    // "Mexican" and "mexican" are one cuisine. Either spelling may be shown.
+    expect(cuisines[2].toLowerCase(), 'mexican');
+  });
 }

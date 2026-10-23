@@ -24,7 +24,11 @@ class CatalogScreen extends StatefulWidget {
 }
 
 class _CatalogScreenState extends State<CatalogScreen> {
+  /// The meals shown in the list (already filtered by cuisine).
   List<Meal> _meals = [];
+
+  /// Every cuisine, used to build the filter chips.
+  List<String> _cuisines = [];
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -37,11 +41,23 @@ class _CatalogScreenState extends State<CatalogScreen> {
     _loadMeals();
   }
 
+  /// Loads the cuisines and the meals for the selected cuisine.
   Future<void> _loadMeals() async {
     try {
-      final meals = await widget.mealRepository.getAllMeals();
+      final cuisines = await widget.mealRepository.getCuisines();
+
+      List<Meal> meals;
+      if (_selectedCuisine == null) {
+        meals = await widget.mealRepository.getAllMeals();
+      } else {
+        meals = await widget.mealRepository.getMealsByCuisine(
+          _selectedCuisine!,
+        );
+      }
+
       if (!mounted) return;
       setState(() {
+        _cuisines = cuisines;
         _meals = meals;
         _isLoading = false;
         _errorMessage = null;
@@ -55,15 +71,10 @@ class _CatalogScreenState extends State<CatalogScreen> {
     }
   }
 
-  List<String> get _cuisines {
-    final cuisines = _meals.map((meal) => meal.cuisine).toSet().toList();
-    cuisines.sort();
-    return cuisines;
-  }
-
-  List<Meal> get _filteredMeals {
-    if (_selectedCuisine == null) return _meals;
-    return _meals.where((meal) => meal.cuisine == _selectedCuisine).toList();
+  /// Called when a filter chip is tapped. Null means "All".
+  void _selectCuisine(String? cuisine) {
+    setState(() => _selectedCuisine = cuisine);
+    _loadMeals();
   }
 
   Future<void> _openEditor() async {
@@ -118,7 +129,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
       );
     }
 
-    if (_meals.isEmpty) {
+    // No filter and still no meals means the table is empty.
+    if (_selectedCuisine == null && _meals.isEmpty) {
       return EmptyState(
         icon: Icons.restaurant_menu,
         title: 'No meals yet',
@@ -145,7 +157,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
           ChoiceChip(
             label: const Text('All'),
             selected: _selectedCuisine == null,
-            onSelected: (_) => setState(() => _selectedCuisine = null),
+            onSelected: (_) => _selectCuisine(null),
           ),
           for (final cuisine in _cuisines)
             Padding(
@@ -153,7 +165,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
               child: ChoiceChip(
                 label: Text(cuisine),
                 selected: _selectedCuisine == cuisine,
-                onSelected: (_) => setState(() => _selectedCuisine = cuisine),
+                onSelected: (_) => _selectCuisine(cuisine),
               ),
             ),
         ],
@@ -162,25 +174,23 @@ class _CatalogScreenState extends State<CatalogScreen> {
   }
 
   Widget _buildMealList() {
-    final meals = _filteredMeals;
-
     // Happens when the last meal of the chosen cuisine is deleted.
-    if (meals.isEmpty) {
+    if (_meals.isEmpty) {
       return EmptyState(
         icon: Icons.search_off,
         title: 'No meals match',
         message: 'No meals match the $_selectedCuisine filter.',
         actionLabel: 'Show all meals',
-        onAction: () => setState(() => _selectedCuisine = null),
+        onAction: () => _selectCuisine(null),
       );
     }
 
     return ListView.builder(
       // Bottom padding keeps the last card clear of the add button.
       padding: const EdgeInsets.only(top: 4, bottom: 88),
-      itemCount: meals.length,
+      itemCount: _meals.length,
       itemBuilder: (context, index) {
-        final meal = meals[index];
+        final meal = _meals[index];
         return MealCard(meal: meal, onTap: () => _openDetail(meal));
       },
     );
