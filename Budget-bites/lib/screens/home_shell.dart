@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/meal_repository.dart';
 import 'catalog_screen.dart';
 import 'history_screen.dart';
 import 'meal_detail_screen.dart';
@@ -8,7 +9,9 @@ import 'settings_screen.dart';
 
 /// Holds the bottom tab bar and switches between the five main screens.
 class HomeShell extends StatefulWidget {
-  const HomeShell({super.key});
+  final MealRepository mealRepository;
+
+  const HomeShell({super.key, required this.mealRepository});
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -17,19 +20,20 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
 
-  static const List<Widget> _screens = [
-    CatalogScreen(),
-    MealEditorScreen(),
-    MealDetailScreen(),
-    HistoryScreen(),
-    SettingsScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    // A screen is rebuilt each time its tab is opened, so the catalog
+    // always loads the latest meals from the database.
+    final screens = [
+      CatalogScreen(mealRepository: widget.mealRepository),
+      MealEditorScreen(mealRepository: widget.mealRepository),
+      MealDetailScreen(mealRepository: widget.mealRepository),
+      const HistoryScreen(),
+      const SettingsScreen(),
+    ];
+
     return Scaffold(
-      // IndexedStack keeps each tab's state when switching tabs.
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: screens[_currentIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {

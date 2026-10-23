@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../data/sample_meals.dart';
+import '../data/meal_repository.dart';
 import '../models/meal.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/meal_card.dart';
@@ -9,41 +9,78 @@ import 'meal_editor_screen.dart';
 
 /// Screen 1: list of meals, cuisine filter, and budget left.
 class CatalogScreen extends StatefulWidget {
-  final List<Meal> meals;
+  final MealRepository mealRepository;
 
-  const CatalogScreen({super.key, this.meals = sampleMeals});
+  const CatalogScreen({super.key, required this.mealRepository});
 
   @override
   State<CatalogScreen> createState() => _CatalogScreenState();
 }
 
 class _CatalogScreenState extends State<CatalogScreen> {
+  List<Meal> _meals = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
   /// Null means "All" cuisines.
   String? _selectedCuisine;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadMeals();
+  }
+
+  Future<void> _loadMeals() async {
+    try {
+      final meals = await widget.mealRepository.getAllMeals();
+      if (!mounted) return;
+      setState(() {
+        _meals = meals;
+        _isLoading = false;
+        _errorMessage = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Could not load meals.';
+      });
+    }
+  }
+
   List<String> get _cuisines {
-    final cuisines = widget.meals.map((meal) => meal.cuisine).toSet().toList();
+    final cuisines = _meals.map((meal) => meal.cuisine).toSet().toList();
     cuisines.sort();
     return cuisines;
   }
 
   List<Meal> get _filteredMeals {
-    if (_selectedCuisine == null) return widget.meals;
-    return widget.meals
-        .where((meal) => meal.cuisine == _selectedCuisine)
-        .toList();
+    if (_selectedCuisine == null) return _meals;
+    return _meals.where((meal) => meal.cuisine == _selectedCuisine).toList();
   }
 
-  void _openEditor() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const MealEditorScreen()),
+  Future<void> _openEditor() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => MealEditorScreen(mealRepository: widget.mealRepository),
+      ),
     );
+    // Reload in case a meal was added.
+    _loadMeals();
   }
 
-  void _openDetail(Meal meal) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => MealDetailScreen(meal: meal)),
+  Future<void> _openDetail(Meal meal) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => MealDetailScreen(
+          mealRepository: widget.mealRepository,
+          meal: meal,
+        ),
+      ),
     );
+    // Reload in case the meal was edited or deleted.
+    _loadMeals();
   }
 
   @override
@@ -55,20 +92,40 @@ class _CatalogScreenState extends State<CatalogScreen> {
         tooltip: 'Add meal',
         child: const Icon(Icons.add),
       ),
-      body: widget.meals.isEmpty
-          ? EmptyState(
-              icon: Icons.restaurant_menu,
-              title: 'No meals yet',
-              message: 'Add a meal you buy often to start planning lunch.',
-              actionLabel: 'Add a meal',
-              onAction: _openEditor,
-            )
-          : Column(
-              children: [
-                _buildCuisineFilter(),
-                Expanded(child: _buildMealList()),
-              ],
-            ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_errorMessage != null) {
+      return EmptyState(
+        icon: Icons.error_outline,
+        title: 'Something went wrong',
+        message: _errorMessage!,
+        actionLabel: 'Try again',
+        onAction: _loadMeals,
+      );
+    }
+
+    if (_meals.isEmpty) {
+      return EmptyState(
+        icon: Icons.restaurant_menu,
+        title: 'No meals yet',
+        message: 'Add a meal you buy often to start planning lunch.',
+        actionLabel: 'Add a meal',
+        onAction: _openEditor,
+      );
+    }
+
+    return Column(
+      children: [
+        _buildCuisineFilter(),
+        Expanded(child: _buildMealList()),
+      ],
     );
   }
 
