@@ -15,7 +15,7 @@ void main() {
     final tabs = {
       'Add': 'Meal form',
       'Plan': 'Meal detail and plan',
-      'History': 'Purchase history',
+      'History': 'No purchases yet',
       'Settings': 'Budget and display settings',
     };
 
