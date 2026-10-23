@@ -10,8 +10,10 @@ import '../widgets/confirm_dialog.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/lunch_lens_card.dart';
 import '../widgets/meal_card.dart';
+import '../widgets/plan_progress.dart';
 import '../widgets/purchase_dialog.dart';
 import '../widgets/purchase_tile.dart';
+import '../widgets/receipt_card.dart';
 import 'meal_editor_screen.dart';
 
 /// Screen 3: meal detail, receipt card, Lunch Lens, and the plan flow.
@@ -46,6 +48,9 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
 
   /// The id of the meal in the current plan, or null if there is no plan.
   int? _plannedMealId;
+
+  /// When the current plan was started.
+  DateTime? _planStartedAt;
   bool _isLoading = true;
 
   /// True when this screen is the Plan tab.
@@ -61,6 +66,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
   /// Loads the plan, the meal (on the Plan tab), and the meal's purchases.
   Future<void> _load() async {
     final plannedMealId = await _planRepository.getPlannedMealId();
+    final planStartedAt = await _planRepository.getPlanStartedAt();
 
     var meal = _meal;
     if (_isPlanTab && plannedMealId != null) {
@@ -77,6 +83,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     if (!mounted) return;
     setState(() {
       _plannedMealId = plannedMealId;
+      _planStartedAt = planStartedAt;
       _meal = meal;
       _purchases = purchases;
       _isLoading = false;
@@ -99,11 +106,30 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     }
 
     await _planRepository.startPlan(meal.id!);
+    final startedAt = await _planRepository.getPlanStartedAt();
     if (!mounted) return;
-    setState(() => _plannedMealId = meal.id);
+    setState(() {
+      _plannedMealId = meal.id;
+      _planStartedAt = startedAt;
+    });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${meal.name} is your lunch plan.')),
     );
+  }
+
+  /// The purchase that counts for the plan: the newest purchase of this
+  /// meal made after the plan was started. Null if there is none yet.
+  Purchase? _planPurchase() {
+    final startedAt = _planStartedAt;
+    if (startedAt == null) return null;
+
+    // _purchases is sorted newest first, so the first match is the newest.
+    for (final purchase in _purchases) {
+      if (!purchase.purchasedAt.isBefore(startedAt)) {
+        return purchase;
+      }
+    }
+    return null;
   }
 
   Future<void> _editMeal() async {
@@ -158,6 +184,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
         _meal = null;
         _purchases = [];
         _plannedMealId = null;
+        _planStartedAt = null;
       });
     } else {
       Navigator.of(context).pop();
@@ -237,6 +264,14 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
         children: [
           MealCard(meal: meal),
           _buildPlanButton(meal),
+          // The progress and receipt only show for the planned meal.
+          if (_plannedMealId == meal.id)
+            PlanProgress(isBought: _planPurchase() != null, isFinished: false),
+          if (_plannedMealId == meal.id)
+            ReceiptCard(
+              plannedPriceMinor: meal.estimatedPriceMinor,
+              purchase: _planPurchase(),
+            ),
           LunchLensCard(purchases: _purchases),
           Padding(
             padding: const EdgeInsets.all(16),
