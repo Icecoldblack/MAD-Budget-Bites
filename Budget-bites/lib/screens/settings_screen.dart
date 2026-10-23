@@ -50,8 +50,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirmed = await showConfirmDialog(
       context,
       title: 'Load sample data?',
-      message: 'This adds 6 sample meals and 10 purchases so you can try '
-          'the app. Your own meals are kept. Each tap adds another copy.',
+      message: 'This adds 6 sample meals and 10 purchases, and makes '
+          'Pad Thai your lunch plan, so you can try the app. Your own meals '
+          'are kept, but your current plan is replaced. Each tap adds '
+          'another copy.',
       confirmLabel: 'Load',
     );
     if (!confirmed) return;

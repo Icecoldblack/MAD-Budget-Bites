@@ -1,6 +1,7 @@
 import '../models/meal.dart';
 import '../models/purchase.dart';
 import 'meal_repository.dart';
+import 'plan_repository.dart';
 import 'purchase_repository.dart';
 
 /// Adds made-up meals and purchases so every screen has something to show.
@@ -10,7 +11,9 @@ import 'purchase_repository.dart';
 /// - Veggie Fried Rice: 4.50, 6.00, 7.50, so Lunch Lens guesses 6.00.
 /// - Turkey Sandwich: 5.00, 5.00, 20.00, the outlier example (guess 10.00).
 /// - Pad Thai: one purchase today, so "Budget left today" goes down, and
-///   Lunch Lens says "Not enough history".
+///   Lunch Lens says "Not enough history". It is also the lunch plan,
+///   started 1 hour ago, so the Plan tab shows a filled-in receipt:
+///   plan 8.00, actual 8.25, "+0.25 over plan".
 /// - Tomato Soup and Bean Burrito: no purchases yet.
 Future<void> addSampleData(
   MealRepository mealRepository,
@@ -141,4 +144,11 @@ Future<void> addSampleData(
   for (final purchase in purchases) {
     await purchaseRepository.insertPurchase(purchase);
   }
+
+  // Make Pad Thai the lunch plan. It started 1 hour ago, before today's
+  // Pad Thai purchase, so that purchase fills in the receipt.
+  await PlanRepository().startPlan(
+    padThaiId,
+    startedAt: now.subtract(const Duration(hours: 1)),
+  );
 }

@@ -31,10 +31,13 @@ class PlanRepository {
   }
 
   /// Starts a new plan for a meal. This replaces any old plan.
-  Future<void> startPlan(int mealId) async {
+  /// The plan starts now, unless a [startedAt] time is given
+  /// (the sample data uses this).
+  Future<void> startPlan(int mealId, {DateTime? startedAt}) async {
+    final time = startedAt ?? DateTime.now();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(mealIdKey, mealId);
-    await prefs.setInt(startedAtKey, DateTime.now().millisecondsSinceEpoch);
+    await prefs.setInt(startedAtKey, time.millisecondsSinceEpoch);
     await prefs.setBool(finishedKey, false);
   }
 

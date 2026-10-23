@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:budget_bites/data/meal_repository.dart';
+import 'package:budget_bites/data/plan_repository.dart';
 import 'package:budget_bites/data/purchase_repository.dart';
 import 'package:budget_bites/data/sample_data.dart';
 import 'package:budget_bites/main.dart';
@@ -101,5 +102,43 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(await mealRepository.getAllMeals(), isEmpty);
+  });
+
+  test('makes Pad Thai the lunch plan, started before its purchase',
+      () async {
+    await addSampleData(mealRepository, purchaseRepository);
+
+    final padThai = (await mealRepository.getAllMeals()).firstWhere(
+      (meal) => meal.name == 'Pad Thai',
+    );
+    expect(await PlanRepository().getPlannedMealId(), padThai.id);
+    expect(await PlanRepository().isPlanFinished(), isFalse);
+
+    // The plan started before today's Pad Thai purchase, so it counts.
+    final startedAt = (await PlanRepository().getPlanStartedAt())!;
+    final purchases = await purchaseRepository.getPurchasesForMeal(
+      padThai.id!,
+    );
+    expect(purchases.first.purchasedAt.isAfter(startedAt), isTrue);
+  });
+
+  testWidgets('the Plan tab shows the sample plan with a filled receipt',
+      (tester) async {
+    await addSampleData(mealRepository, purchaseRepository);
+    await tester.pumpWidget(
+      BudgetBitesApp(
+        mealRepository: mealRepository,
+        purchaseRepository: purchaseRepository,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(NavigationDestination, 'Plan'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Your plan'), findsOneWidget);
+    expect(find.text('Pad Thai'), findsOneWidget);
+    expect(find.text('This is your lunch plan'), findsOneWidget);
+    // Plan 8.00, actual 8.25.
+    expect(find.text('+0.25 over plan'), findsOneWidget);
   });
 }
