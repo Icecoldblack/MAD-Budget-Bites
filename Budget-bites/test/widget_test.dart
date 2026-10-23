@@ -50,7 +50,7 @@ void main() {
 
     final tabs = {
       'Add': 'Add Meal',
-      'Plan': 'Meal detail and plan',
+      'Plan': 'No plan yet',
       'History': 'No purchases yet',
       'Settings': 'Daily lunch budget',
       'Meals': 'No meals yet',

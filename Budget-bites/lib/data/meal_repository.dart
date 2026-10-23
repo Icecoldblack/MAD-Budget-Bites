@@ -14,6 +14,16 @@ class MealRepository {
     return rows.map((row) => Meal.fromMap(row)).toList();
   }
 
+  /// Returns one meal, or null if no meal has this id
+  /// (for example, because it was deleted).
+  Future<Meal?> getMealById(int id) async {
+    final rows = await db.query('Meal', where: 'id = ?', whereArgs: [id]);
+    if (rows.isEmpty) {
+      return null;
+    }
+    return Meal.fromMap(rows.first);
+  }
+
   /// Returns only the meals of one cuisine, sorted by name.
   /// COLLATE NOCASE ignores upper and lower case, so "mexican" matches
   /// "Mexican".

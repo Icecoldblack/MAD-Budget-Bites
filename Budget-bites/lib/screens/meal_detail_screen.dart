@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../data/meal_repository.dart';
+import '../data/plan_repository.dart';
 import '../data/purchase_repository.dart';
 import '../models/meal.dart';
 import '../models/purchase.dart';
 import '../utils/dates.dart';
 import '../widgets/confirm_dialog.dart';
+import '../widgets/empty_state.dart';
 import '../widgets/lunch_lens_card.dart';
 import '../widgets/meal_card.dart';
 import '../widgets/purchase_dialog.dart';
@@ -13,11 +15,16 @@ import '../widgets/purchase_tile.dart';
 import 'meal_editor_screen.dart';
 
 /// Screen 3: meal detail, receipt card, Lunch Lens, and the plan flow.
+///
+/// It opens in two ways:
+/// - From the Meals tab, with a [meal] to show.
+/// - From the Plan tab, with no meal. Then it shows the planned meal,
+///   or "No plan yet".
 class MealDetailScreen extends StatefulWidget {
   final MealRepository mealRepository;
   final PurchaseRepository purchaseRepository;
 
-  /// The meal being viewed. Null when opened from the Plan tab with no plan.
+  /// The meal being viewed. Null when opened from the Plan tab.
   final Meal? meal;
 
   const MealDetailScreen({
@@ -32,24 +39,71 @@ class MealDetailScreen extends StatefulWidget {
 }
 
 class _MealDetailScreenState extends State<MealDetailScreen> {
+  final _planRepository = PlanRepository();
+
   Meal? _meal;
   List<Purchase> _purchases = [];
+
+  /// The id of the meal in the current plan, or null if there is no plan.
+  int? _plannedMealId;
+  bool _isLoading = true;
+
+  /// True when this screen is the Plan tab.
+  bool get _isPlanTab => widget.meal == null;
 
   @override
   void initState() {
     super.initState();
     _meal = widget.meal;
-    _loadPurchases();
+    _load();
   }
 
-  Future<void> _loadPurchases() async {
-    final meal = _meal;
-    if (meal == null) return;
+  /// Loads the plan, the meal (on the Plan tab), and the meal's purchases.
+  Future<void> _load() async {
+    final plannedMealId = await _planRepository.getPlannedMealId();
 
-    final purchases =
-        await widget.purchaseRepository.getPurchasesForMeal(meal.id!);
+    var meal = _meal;
+    if (_isPlanTab && plannedMealId != null) {
+      meal = await widget.mealRepository.getMealById(plannedMealId);
+    }
+
+    var purchases = <Purchase>[];
+    if (meal != null) {
+      purchases = await widget.purchaseRepository.getPurchasesForMeal(
+        meal.id!,
+      );
+    }
+
     if (!mounted) return;
-    setState(() => _purchases = purchases);
+    setState(() {
+      _plannedMealId = plannedMealId;
+      _meal = meal;
+      _purchases = purchases;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _startPlan() async {
+    final meal = _meal!;
+
+    // Planning a different meal replaces the old plan, so ask first.
+    if (_plannedMealId != null && _plannedMealId != meal.id) {
+      final confirmed = await showConfirmDialog(
+        context,
+        title: 'Replace your plan?',
+        message: 'You already have a lunch plan. '
+            'Planning ${meal.name} will replace it.',
+        confirmLabel: 'Replace',
+      );
+      if (!confirmed) return;
+    }
+
+    await _planRepository.startPlan(meal.id!);
+    if (!mounted) return;
+    setState(() => _plannedMealId = meal.id);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${meal.name} is your lunch plan.')),
+    );
   }
 
   Future<void> _editMeal() async {
@@ -91,8 +145,23 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     if (!confirmed) return;
 
     await widget.mealRepository.deleteMeal(meal.id!);
+
+    // A deleted meal can't stay in the plan.
+    if (_plannedMealId == meal.id) {
+      await _planRepository.clearPlan();
+    }
     if (!mounted) return;
-    Navigator.of(context).pop();
+
+    if (_isPlanTab) {
+      // The Plan tab has nowhere to go back to, so show "No plan yet".
+      setState(() {
+        _meal = null;
+        _purchases = [];
+        _plannedMealId = null;
+      });
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   /// Opens the purchase form. Pass a purchase to edit it, or null to log
@@ -107,7 +176,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
       ),
     );
     if (saved == true) {
-      _loadPurchases();
+      _load();
     }
   }
 
@@ -121,23 +190,35 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     if (!confirmed) return;
 
     await widget.purchaseRepository.deletePurchase(purchase.id!);
-    _loadPurchases();
+    _load();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Plan')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final meal = _meal;
 
+    // Only happens on the Plan tab.
     if (meal == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Plan')),
-        body: const Center(child: Text('Meal detail and plan')),
+        body: const EmptyState(
+          icon: Icons.event_note,
+          title: 'No plan yet',
+          message: 'Open a meal on the Meals tab and tap "Plan this meal".',
+        ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(meal.name),
+        title: Text(_isPlanTab ? 'Your plan' : meal.name),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
@@ -155,6 +236,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
           MealCard(meal: meal),
+          _buildPlanButton(meal),
           LunchLensCard(purchases: _purchases),
           Padding(
             padding: const EdgeInsets.all(16),
@@ -184,6 +266,37 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
               onDelete: () => _deletePurchase(purchase),
             ),
         ],
+      ),
+    );
+  }
+
+  /// "Plan this meal", or a label if this meal is already the plan.
+  Widget _buildPlanButton(Meal meal) {
+    if (_plannedMealId == meal.id) {
+      final theme = Theme.of(context);
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Icon(Icons.check_circle, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              'This is your lunch plan',
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: OutlinedButton.icon(
+        onPressed: _startPlan,
+        icon: const Icon(Icons.event_available),
+        label: const Text('Plan this meal'),
       ),
     );
   }
