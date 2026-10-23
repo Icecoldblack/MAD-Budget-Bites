@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../data/meal_repository.dart';
 import '../data/purchase_repository.dart';
+import '../data/settings_repository.dart';
 import '../models/meal.dart';
+import '../utils/money.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/meal_card.dart';
 import 'meal_detail_screen.dart';
@@ -35,16 +37,29 @@ class _CatalogScreenState extends State<CatalogScreen> {
   /// Null means "All" cuisines.
   String? _selectedCuisine;
 
+  /// The daily budget from Settings and what was spent today.
+  int _dailyBudgetMinor = 0;
+  int _spentTodayMinor = 0;
+
   @override
   void initState() {
     super.initState();
     _loadMeals();
   }
 
-  /// Loads the cuisines and the meals for the selected cuisine.
+  /// Loads the cuisines, the meals for the selected cuisine, and the budget.
   Future<void> _loadMeals() async {
     try {
       final cuisines = await widget.mealRepository.getCuisines();
+
+      final budget = await SettingsRepository().getDailyBudget();
+      final now = DateTime.now();
+      final startOfToday = DateTime(now.year, now.month, now.day);
+      final startOfTomorrow = DateTime(now.year, now.month, now.day + 1);
+      final spentToday = await widget.purchaseRepository.getTotalSpentInRange(
+        startOfToday,
+        startOfTomorrow,
+      );
 
       List<Meal> meals;
       if (_selectedCuisine == null) {
@@ -59,6 +74,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
       setState(() {
         _cuisines = cuisines;
         _meals = meals;
+        _dailyBudgetMinor = budget;
+        _spentTodayMinor = spentToday;
         _isLoading = false;
         _errorMessage = null;
       });
@@ -142,9 +159,37 @@ class _CatalogScreenState extends State<CatalogScreen> {
 
     return Column(
       children: [
+        _buildBudgetLeft(),
         _buildCuisineFilter(),
         Expanded(child: _buildMealList()),
       ],
+    );
+  }
+
+  /// Shows how much of today's budget is left, e.g. "Budget left today:
+  /// 3.75 of 10.00". It turns red when the budget is overspent.
+  Widget _buildBudgetLeft() {
+    final theme = Theme.of(context);
+    final leftMinor = _dailyBudgetMinor - _spentTodayMinor;
+
+    Color color = theme.colorScheme.primary;
+    if (leftMinor < 0) {
+      color = theme.colorScheme.error;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Row(
+        children: [
+          Icon(Icons.account_balance_wallet_outlined, color: color),
+          const SizedBox(width: 8),
+          Text(
+            'Budget left today: ${formatMinor(leftMinor)} '
+            'of ${formatMinor(_dailyBudgetMinor)}',
+            style: theme.textTheme.titleSmall?.copyWith(color: color),
+          ),
+        ],
+      ),
     );
   }
 

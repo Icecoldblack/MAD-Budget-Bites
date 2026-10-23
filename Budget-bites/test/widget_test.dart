@@ -52,7 +52,7 @@ void main() {
       'Add': 'Add Meal',
       'Plan': 'Meal detail and plan',
       'History': 'No purchases yet',
-      'Settings': 'Budget and display settings',
+      'Settings': 'Daily lunch budget',
       'Meals': 'No meals yet',
     };
 
