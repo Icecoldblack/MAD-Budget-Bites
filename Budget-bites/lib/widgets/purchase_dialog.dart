@@ -32,6 +32,10 @@ class _PurchaseDialogState extends State<PurchaseDialog> {
   DateTime _purchasedAt = DateTime.now();
   String? _errorMessage;
 
+  /// True while the purchase is being saved. It stops a double tap from
+  /// saving the same purchase twice.
+  bool _isSaving = false;
+
   @override
   void initState() {
     super.initState();
@@ -82,7 +86,15 @@ class _PurchaseDialogState extends State<PurchaseDialog> {
   }
 
   Future<void> _save() async {
+    // A second tap can arrive before the button has turned off.
+    // If a save is already running, ignore the tap.
+    if (_isSaving) return;
     if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isSaving = true;
+      _errorMessage = null;
+    });
 
     final purchase = Purchase(
       id: widget.purchase?.id,
@@ -99,12 +111,23 @@ class _PurchaseDialogState extends State<PurchaseDialog> {
         await widget.purchaseRepository.updatePurchase(purchase);
       }
     } catch (e) {
-      setState(() => _errorMessage = 'Could not save. Try again.');
+      if (!mounted) return;
+      // Turn the button back on so the user can try again.
+      setState(() {
+        _isSaving = false;
+        _errorMessage = 'Could not save. Try again.';
+      });
       return;
     }
 
     if (!mounted) return;
     Navigator.of(context).pop(true);
+  }
+
+  String _buttonText(bool isEditing) {
+    if (_isSaving) return 'Saving...';
+    if (isEditing) return 'Save';
+    return 'Log purchase';
   }
 
   @override
@@ -154,12 +177,13 @@ class _PurchaseDialogState extends State<PurchaseDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
           child: const Text('Cancel'),
         ),
         FilledButton(
-          onPressed: _save,
-          child: Text(isEditing ? 'Save' : 'Log purchase'),
+          // Null turns the button off while saving.
+          onPressed: _isSaving ? null : _save,
+          child: Text(_buttonText(isEditing)),
         ),
       ],
     );
