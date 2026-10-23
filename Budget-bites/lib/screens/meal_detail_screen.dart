@@ -51,6 +51,9 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
 
   /// When the current plan was started.
   DateTime? _planStartedAt;
+
+  /// True after the user taps "Finish plan".
+  bool _planFinished = false;
   bool _isLoading = true;
 
   /// True when this screen is the Plan tab.
@@ -67,6 +70,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
   Future<void> _load() async {
     final plannedMealId = await _planRepository.getPlannedMealId();
     final planStartedAt = await _planRepository.getPlanStartedAt();
+    final planFinished = await _planRepository.isPlanFinished();
 
     var meal = _meal;
     if (_isPlanTab && plannedMealId != null) {
@@ -84,6 +88,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     setState(() {
       _plannedMealId = plannedMealId;
       _planStartedAt = planStartedAt;
+      _planFinished = planFinished;
       _meal = meal;
       _purchases = purchases;
       _isLoading = false;
@@ -94,7 +99,8 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     final meal = _meal!;
 
     // Planning a different meal replaces the old plan, so ask first.
-    if (_plannedMealId != null && _plannedMealId != meal.id) {
+    // A finished plan is done, so it can be replaced without asking.
+    if (_plannedMealId != null && _plannedMealId != meal.id && !_planFinished) {
       final confirmed = await showConfirmDialog(
         context,
         title: 'Replace your plan?',
@@ -111,10 +117,47 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     setState(() {
       _plannedMealId = meal.id;
       _planStartedAt = startedAt;
+      _planFinished = false;
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${meal.name} is your lunch plan.')),
     );
+  }
+
+  /// Ends the plan after the meal was bought. Every progress step is done.
+  Future<void> _finishPlan() async {
+    await _planRepository.finishPlan();
+    if (!mounted) return;
+    setState(() => _planFinished = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Plan finished. Nice work!')),
+    );
+  }
+
+  /// Removes the plan after asking. Purchases are kept.
+  Future<void> _resetPlan() async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Reset plan?',
+      message: 'Your lunch plan will be removed. '
+          'Your purchases are kept.',
+      confirmLabel: 'Reset',
+    );
+    if (!confirmed) return;
+
+    await _planRepository.clearPlan();
+    if (!mounted) return;
+
+    setState(() {
+      _plannedMealId = null;
+      _planStartedAt = null;
+      _planFinished = false;
+      // The Plan tab has no meal without a plan, so it shows "No plan yet".
+      if (_isPlanTab) {
+        _meal = null;
+        _purchases = [];
+      }
+    });
   }
 
   /// The purchase that counts for the plan: the newest purchase of this
@@ -185,6 +228,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
         _purchases = [];
         _plannedMealId = null;
         _planStartedAt = null;
+        _planFinished = false;
       });
     } else {
       Navigator.of(context).pop();
@@ -264,14 +308,19 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
         children: [
           MealCard(meal: meal),
           _buildPlanButton(meal),
-          // The progress and receipt only show for the planned meal.
+          // The progress, receipt, and plan buttons only show for the
+          // planned meal.
           if (_plannedMealId == meal.id)
-            PlanProgress(isBought: _planPurchase() != null, isFinished: false),
+            PlanProgress(
+              isBought: _planPurchase() != null,
+              isFinished: _planFinished,
+            ),
           if (_plannedMealId == meal.id)
             ReceiptCard(
               plannedPriceMinor: meal.estimatedPriceMinor,
               purchase: _planPurchase(),
             ),
+          if (_plannedMealId == meal.id) _buildPlanActions(),
           LunchLensCard(purchases: _purchases),
           Padding(
             padding: const EdgeInsets.all(16),
@@ -316,7 +365,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
             Icon(Icons.check_circle, color: theme.colorScheme.primary),
             const SizedBox(width: 8),
             Text(
-              'This is your lunch plan',
+              _planFinished ? 'Plan finished' : 'This is your lunch plan',
               style: theme.textTheme.titleSmall?.copyWith(
                 color: theme.colorScheme.primary,
               ),
@@ -332,6 +381,50 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
         onPressed: _startPlan,
         icon: const Icon(Icons.event_available),
         label: const Text('Plan this meal'),
+      ),
+    );
+  }
+
+  /// The "Finish plan" and "Reset plan" buttons.
+  Widget _buildPlanActions() {
+    final isBought = _planPurchase() != null;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              // A finished plan can't be finished again.
+              if (!_planFinished)
+                Expanded(
+                  child: FilledButton.icon(
+                    // Off until the meal is bought.
+                    onPressed: isBought ? _finishPlan : null,
+                    icon: const Icon(Icons.flag),
+                    label: const Text('Finish plan'),
+                  ),
+                ),
+              if (!_planFinished) const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _resetPlan,
+                  icon: const Icon(Icons.restart_alt),
+                  label: const Text('Reset plan'),
+                ),
+              ),
+            ],
+          ),
+          if (!isBought && !_planFinished)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Log a purchase of this meal to finish the plan.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+        ],
       ),
     );
   }

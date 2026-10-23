@@ -159,7 +159,9 @@ void main() {
       expect(find.text('Not bought yet'), findsOneWidget);
 
       // The new cards push the button below the small test screen.
-      await tester.scrollUntilVisible(find.text('Log purchase'), 200);
+      // Scroll until the "Purchases" heading under it shows, so the button
+      // is fully above the tab bar.
+      await tester.scrollUntilVisible(find.text('Purchases'), 200);
       await tester.tap(find.text('Log purchase'));
       await tester.pumpAndSettle();
       await tester.enterText(
