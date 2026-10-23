@@ -4,6 +4,7 @@ import '../data/meal_repository.dart';
 import '../data/purchase_repository.dart';
 import '../models/purchase.dart';
 import '../utils/dates.dart';
+import '../utils/money.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/purchase_dialog.dart';
@@ -26,6 +27,10 @@ class HistoryScreen extends StatefulWidget {
 
 class _HistoryScreenState extends State<HistoryScreen> {
   List<Purchase> _purchases = [];
+  int _totalSpentMinor = 0;
+
+  /// The chosen dates. Null means "All time".
+  DateTimeRange? _range;
 
   /// Meal names by meal id, so each purchase can show its meal's name.
   Map<int, String> _mealNames = {};
@@ -38,9 +43,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _loadPurchases() async {
-    final purchases = await widget.purchaseRepository.getAllPurchases();
-    final meals = await widget.mealRepository.getAllMeals();
+    final range = _range;
+    List<Purchase> purchases;
+    int total;
 
+    if (range == null) {
+      purchases = await widget.purchaseRepository.getAllPurchases();
+      total = await widget.purchaseRepository.getTotalSpent();
+    } else {
+      // The range picker gives the last day at midnight. Add one day so
+      // purchases made during the last day are included.
+      final from = range.start;
+      final to = DateTime(range.end.year, range.end.month, range.end.day + 1);
+      purchases = await widget.purchaseRepository.getPurchasesInRange(
+        from,
+        to,
+      );
+      total = await widget.purchaseRepository.getTotalSpentInRange(from, to);
+    }
+
+    final meals = await widget.mealRepository.getAllMeals();
     final mealNames = <int, String>{};
     for (final meal in meals) {
       mealNames[meal.id!] = meal.name;
@@ -49,9 +71,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (!mounted) return;
     setState(() {
       _purchases = purchases;
+      _totalSpentMinor = total;
       _mealNames = mealNames;
       _isLoading = false;
     });
+  }
+
+  Future<void> _pickRange() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      initialDateRange: _range,
+    );
+    if (picked == null) return;
+
+    setState(() => _range = picked);
+    _loadPurchases();
+  }
+
+  void _showAllTime() {
+    setState(() => _range = null);
+    _loadPurchases();
   }
 
   Future<void> _editPurchase(Purchase purchase) async {
@@ -94,12 +135,80 @@ class _HistoryScreenState extends State<HistoryScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_purchases.isEmpty) {
+    // No dates picked and still nothing: the user has never logged a purchase.
+    if (_range == null && _purchases.isEmpty) {
       return const EmptyState(
         icon: Icons.receipt_long,
         title: 'No purchases yet',
         message: 'Log a purchase from a meal\'s detail screen and it will '
             'show up here with your total spending.',
+      );
+    }
+
+    return Column(
+      children: [
+        _buildTotalCard(),
+        Expanded(child: _buildPurchaseList()),
+      ],
+    );
+  }
+
+  Widget _buildTotalCard() {
+    final theme = Theme.of(context);
+    final range = _range;
+
+    String periodText;
+    if (range == null) {
+      periodText = 'All time';
+    } else {
+      periodText = '${formatDate(range.start)} to ${formatDate(range.end)}';
+    }
+
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Total spent', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              formatMinor(_totalSpentMinor),
+              style: theme.textTheme.headlineLarge?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(child: Text(periodText)),
+                TextButton(
+                  onPressed: _pickRange,
+                  child: const Text('Change dates'),
+                ),
+                if (range != null)
+                  TextButton(
+                    onPressed: _showAllTime,
+                    child: const Text('All time'),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPurchaseList() {
+    if (_purchases.isEmpty) {
+      return EmptyState(
+        icon: Icons.event_busy,
+        title: 'No purchases in this period',
+        message: 'Pick other dates, or show all time.',
+        actionLabel: 'Show all time',
+        onAction: _showAllTime,
       );
     }
 

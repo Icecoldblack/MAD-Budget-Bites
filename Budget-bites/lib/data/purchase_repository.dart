@@ -18,6 +18,37 @@ class PurchaseRepository {
     return rows.map((row) => Purchase.fromMap(row)).toList();
   }
 
+  /// Returns the purchases from [from] up to (but not including) [to],
+  /// newest first.
+  Future<List<Purchase>> getPurchasesInRange(DateTime from, DateTime to) async {
+    final rows = await db.query(
+      'PurchaseLog',
+      where: 'purchasedAt >= ? AND purchasedAt < ?',
+      whereArgs: [from.millisecondsSinceEpoch, to.millisecondsSinceEpoch],
+      orderBy: 'purchasedAt DESC, id DESC',
+    );
+    return rows.map((row) => Purchase.fromMap(row)).toList();
+  }
+
+  /// Adds up every purchase ever made, in minor units.
+  Future<int> getTotalSpent() async {
+    // COALESCE turns "no rows" (NULL) into 0.
+    final rows = await db.rawQuery(
+      'SELECT COALESCE(SUM(actualPriceMinor), 0) AS total FROM PurchaseLog',
+    );
+    return rows.first['total'] as int;
+  }
+
+  /// Adds up the purchases from [from] up to (but not including) [to].
+  Future<int> getTotalSpentInRange(DateTime from, DateTime to) async {
+    final rows = await db.rawQuery(
+      'SELECT COALESCE(SUM(actualPriceMinor), 0) AS total FROM PurchaseLog '
+      'WHERE purchasedAt >= ? AND purchasedAt < ?',
+      [from.millisecondsSinceEpoch, to.millisecondsSinceEpoch],
+    );
+    return rows.first['total'] as int;
+  }
+
   /// Returns the purchases of one meal, newest first.
   Future<List<Purchase>> getPurchasesForMeal(int mealId) async {
     final rows = await db.query(

@@ -93,7 +93,8 @@ void main() {
 
     expect(find.byType(PurchaseTile), findsOneWidget);
     expect(find.text('Veggie Fried Rice'), findsOneWidget);
-    expect(find.text('6.25'), findsOneWidget);
+    // Look inside the purchase row; the total card also shows 6.25.
+    expect(find.widgetWithText(PurchaseTile, '6.25'), findsOneWidget);
   });
 
   testWidgets('the purchase form rejects a bad price', (tester) async {
@@ -134,7 +135,8 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pumpAndSettle();
 
-    expect(find.text('5.50'), findsOneWidget);
+    // Look inside the purchase row; the total card also shows 5.50.
+    expect(find.widgetWithText(PurchaseTile, '5.50'), findsOneWidget);
     final purchases = await purchaseRepository.getAllPurchases();
     expect(purchases.first.actualPriceMinor, 550);
   });
