@@ -33,12 +33,28 @@ void main() {
   });
 
   group('SettingsScreen', () {
-    setUp(() {
-      SharedPreferences.setMockInitialValues({});
+    late Database db;
+
+    setUp(() async {
+      // This also gives SharedPreferences an empty fake store.
+      db = await openTestDatabase();
     });
 
+    tearDown(() async {
+      await db.close();
+    });
+
+    Widget buildSettings() {
+      return MaterialApp(
+        home: SettingsScreen(
+          mealRepository: MealRepository(db),
+          purchaseRepository: PurchaseRepository(db),
+        ),
+      );
+    }
+
     testWidgets('shows the budget as a number', (tester) async {
-      await tester.pumpWidget(const MaterialApp(home: SettingsScreen()));
+      await tester.pumpWidget(buildSettings());
       await tester.pumpAndSettle();
 
       expect(find.text('Daily lunch budget'), findsOneWidget);
@@ -50,14 +66,14 @@ void main() {
         SettingsRepository.dailyBudgetKey: 1500,
       });
 
-      await tester.pumpWidget(const MaterialApp(home: SettingsScreen()));
+      await tester.pumpWidget(buildSettings());
       await tester.pumpAndSettle();
 
       expect(find.text('15.00'), findsOneWidget);
     });
 
     testWidgets('moving the slider saves the new budget', (tester) async {
-      await tester.pumpWidget(const MaterialApp(home: SettingsScreen()));
+      await tester.pumpWidget(buildSettings());
       await tester.pumpAndSettle();
 
       // Drag the slider all the way to the right: 30.00.
@@ -69,7 +85,7 @@ void main() {
 
       // Reopen the screen: the saved value is loaded again.
       await tester.pumpWidget(const SizedBox());
-      await tester.pumpWidget(const MaterialApp(home: SettingsScreen()));
+      await tester.pumpWidget(buildSettings());
       await tester.pumpAndSettle();
       expect(find.text('30.00'), findsOneWidget);
     });

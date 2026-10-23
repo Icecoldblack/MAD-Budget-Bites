@@ -1,11 +1,22 @@
 import 'package:flutter/material.dart';
 
+import '../data/meal_repository.dart';
+import '../data/purchase_repository.dart';
+import '../data/sample_data.dart';
 import '../data/settings_repository.dart';
 import '../utils/money.dart';
+import '../widgets/confirm_dialog.dart';
 
 /// Screen 5: daily budget slider and display option.
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final MealRepository mealRepository;
+  final PurchaseRepository purchaseRepository;
+
+  const SettingsScreen({
+    super.key,
+    required this.mealRepository,
+    required this.purchaseRepository,
+  });
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -33,6 +44,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _dailyBudgetMinor = budget;
       _isLoading = false;
     });
+  }
+
+  Future<void> _loadSampleData() async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Load sample data?',
+      message: 'This adds 6 sample meals and 10 purchases so you can try '
+          'the app. Your own meals are kept. Each tap adds another copy.',
+      confirmLabel: 'Load',
+    );
+    if (!confirmed) return;
+
+    await addSampleData(widget.mealRepository, widget.purchaseRepository);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Sample data added.')),
+    );
   }
 
   @override
@@ -80,6 +108,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             'Used on the Meals screen to show how much of today\'s budget '
             'is left.',
             style: theme.textTheme.bodySmall,
+          ),
+          const Divider(height: 48),
+          Text('Testing', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _loadSampleData,
+            icon: const Icon(Icons.science_outlined),
+            label: const Text('Load sample data'),
           ),
         ],
       ),

@@ -44,7 +44,10 @@ class _HomeShellState extends State<HomeShell> {
         mealRepository: widget.mealRepository,
         purchaseRepository: widget.purchaseRepository,
       ),
-      const SettingsScreen(),
+      SettingsScreen(
+        mealRepository: widget.mealRepository,
+        purchaseRepository: widget.purchaseRepository,
+      ),
     ];
 
     return Scaffold(
