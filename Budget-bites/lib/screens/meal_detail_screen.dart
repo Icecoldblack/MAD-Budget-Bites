@@ -6,6 +6,7 @@ import '../models/meal.dart';
 import '../models/purchase.dart';
 import '../utils/dates.dart';
 import '../widgets/confirm_dialog.dart';
+import '../widgets/lunch_lens_card.dart';
 import '../widgets/meal_card.dart';
 import '../widgets/purchase_dialog.dart';
 import '../widgets/purchase_tile.dart';
@@ -154,6 +155,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
           MealCard(meal: meal),
+          LunchLensCard(purchases: _purchases),
           Padding(
             padding: const EdgeInsets.all(16),
             child: FilledButton.icon(
