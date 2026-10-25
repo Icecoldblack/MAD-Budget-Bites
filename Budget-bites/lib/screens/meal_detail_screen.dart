@@ -285,6 +285,16 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
           MealCard(meal: meal),
+          // The main action sits right under the meal, so it never gets
+          // pushed off the screen by the plan cards.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: FilledButton.icon(
+              onPressed: () => _openPurchaseDialog(null),
+              icon: const Icon(Icons.add_shopping_cart),
+              label: const Text('Log purchase'),
+            ),
+          ),
           if (isPlanned) _buildPlanLabel() else _buildPlanButton(),
           if (isPlanned)
             PlanProgress(
@@ -299,15 +309,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
           if (isPlanned) _buildPlanActions(planPurchase != null),
           LunchLensCard(purchases: _purchases),
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: FilledButton.icon(
-              onPressed: () => _openPurchaseDialog(null),
-              icon: const Icon(Icons.add_shopping_cart),
-              label: const Text('Log purchase'),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Text(
               'Purchases',
               style: Theme.of(context).textTheme.titleMedium,

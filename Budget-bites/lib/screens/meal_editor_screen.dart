@@ -104,7 +104,7 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
       return 'Enter a price.';
     }
     if (parseMinor(value) == null) {
-      return 'Enter a price like 6.50 (zero or more, up to 2 decimals).';
+      return 'Enter a price like 6.50';
     }
     return null;
   }

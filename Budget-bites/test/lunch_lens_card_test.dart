@@ -58,7 +58,7 @@ void main() {
     expect(find.text('6.50'), findsOneWidget);
     // The explanation.
     expect(
-      find.text('Moving average of your last three purchases:'),
+      find.text('Average of your last 3 purchases:'),
       findsOneWidget,
     );
     expect(find.textContaining('not a trained model'), findsOneWidget);

@@ -49,7 +49,7 @@ the card says **"Not enough history"**.
 ## 4. What the card shows (explanation)
 
 - The estimate, labelled "Likely cost of your next purchase".
-- "Moving average of your last three purchases:" followed by the **three
+- "Average of your last 3 purchases:" followed by the **three
   amounts and their dates**, so the user can see exactly where the number
   came from.
 - A note that it is a simple rule (an average), not a trained model, and that

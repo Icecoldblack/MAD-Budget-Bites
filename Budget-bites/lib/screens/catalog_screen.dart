@@ -114,11 +114,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Meals')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openEditor,
-        tooltip: 'Add meal',
-        child: const Icon(Icons.add),
-      ),
       body: _buildBody(),
     );
   }
@@ -149,6 +144,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
     }
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildBudgetLeft(),
         _buildCuisineFilter(),
@@ -168,14 +164,26 @@ class _CatalogScreenState extends State<CatalogScreen> {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.account_balance_wallet_outlined, color: color),
-          const SizedBox(width: 8),
-          Text(
-            'Budget left today: ${formatMinor(leftMinor)} '
-            'of ${formatMinor(_dailyBudgetMinor)}',
-            style: theme.textTheme.titleSmall?.copyWith(color: color),
+          Row(
+            children: [
+              Icon(Icons.account_balance_wallet_outlined, color: color),
+              const SizedBox(width: 8),
+              Text(
+                'Budget left today: ${formatMinor(leftMinor)} '
+                'of ${formatMinor(_dailyBudgetMinor)}',
+                style: theme.textTheme.titleSmall?.copyWith(color: color),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 32),
+            child: Text(
+              'Set your daily budget in Settings',
+              style: theme.textTheme.bodySmall,
+            ),
           ),
         ],
       ),
@@ -220,8 +228,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
     }
 
     return ListView.builder(
-      // Space at the bottom so the add button doesn't cover the last card.
-      padding: const EdgeInsets.only(top: 4, bottom: 88),
+      padding: const EdgeInsets.only(top: 4, bottom: 16),
       itemCount: _meals.length,
       itemBuilder: (context, index) {
         final meal = _meals[index];

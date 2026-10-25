@@ -76,7 +76,7 @@ class LunchLensCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        const Text('Moving average of your last three purchases:'),
+        const Text('Average of your last 3 purchases:'),
         const SizedBox(height: 4),
         for (final purchase in lastThree)
           Padding(

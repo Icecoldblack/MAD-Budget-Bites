@@ -130,7 +130,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Enter a price like 6.50 (zero or more, up to 2 decimals).'),
+      find.text('Enter a price like 6.50'),
       findsOneWidget,
     );
     expect(await repository.getAllMeals(), isEmpty);
