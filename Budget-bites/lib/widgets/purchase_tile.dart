@@ -10,24 +10,35 @@ class PurchaseTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
+  // Turn off when the title already is the date (on the detail screen).
+  final bool showDate;
+
   const PurchaseTile({
     super.key,
     required this.purchase,
     required this.title,
     required this.onTap,
     required this.onDelete,
+    this.showDate = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    String subtitle = formatDate(purchase.purchasedAt);
+    String subtitle = '';
+    if (showDate) {
+      subtitle = formatDate(purchase.purchasedAt);
+    }
     if (purchase.note.isNotEmpty) {
-      subtitle = '$subtitle  •  ${purchase.note}';
+      if (subtitle.isEmpty) {
+        subtitle = purchase.note;
+      } else {
+        subtitle = '$subtitle  •  ${purchase.note}';
+      }
     }
 
     return ListTile(
       title: Text(title),
-      subtitle: Text(subtitle),
+      subtitle: subtitle.isEmpty ? null : Text(subtitle),
       onTap: onTap,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,

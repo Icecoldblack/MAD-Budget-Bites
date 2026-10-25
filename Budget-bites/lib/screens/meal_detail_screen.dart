@@ -322,6 +322,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
             PurchaseTile(
               purchase: purchase,
               title: formatDate(purchase.purchasedAt),
+              showDate: false,
               onTap: () => _openPurchaseDialog(purchase),
               onDelete: () => _deletePurchase(purchase),
             ),
