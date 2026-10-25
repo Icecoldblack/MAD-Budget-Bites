@@ -1,11 +1,10 @@
 import 'package:sqflite/sqflite.dart';
 
-/// Opens the app's SQLite database and creates the tables the first time.
 class DatabaseHelper {
-  /// Version 1 had only the Meal table. Version 2 added PurchaseLog.
+  // Version 1 had only the Meal table. Version 2 added PurchaseLog.
   static const int version = 2;
 
-  /// Tests pass a different [path] so they get an empty in-memory database.
+  // Tests pass a different path to get an empty in-memory database.
   static Future<Database> openAppDatabase({
     String path = 'budget_bites.db',
   }) async {
@@ -18,19 +17,16 @@ class DatabaseHelper {
     );
   }
 
-  /// SQLite only checks that a purchase's mealId points to a real meal
-  /// when foreign keys are turned on.
+  // Without this, SQLite does not check that a purchase's mealId exists.
   static Future<void> _turnOnForeignKeys(Database db) async {
     await db.execute('PRAGMA foreign_keys = ON');
   }
 
-  /// Runs on a brand new install.
   static Future<void> _createTables(Database db, int version) async {
     await _createMealTable(db);
     await _createPurchaseLogTable(db);
   }
 
-  /// Runs when the app already has an older database on the device.
   static Future<void> _upgradeTables(
     Database db,
     int oldVersion,
@@ -42,7 +38,6 @@ class DatabaseHelper {
   }
 
   static Future<void> _createMealTable(Database db) async {
-    // Prices are whole numbers in minor units and can't be negative.
     await db.execute('''
       CREATE TABLE Meal (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,7 +50,6 @@ class DatabaseHelper {
   }
 
   static Future<void> _createPurchaseLogTable(Database db) async {
-    // mealId links each purchase to a row in the Meal table.
     await db.execute('''
       CREATE TABLE PurchaseLog (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

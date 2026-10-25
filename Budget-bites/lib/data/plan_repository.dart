@@ -1,20 +1,17 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Remembers the current lunch plan with SharedPreferences.
-/// A plan is "which meal", "when the plan was started", and
-/// "is it finished".
+// The lunch plan is saved with SharedPreferences: which meal, when it
+// started, and whether it is finished.
 class PlanRepository {
   static const String mealIdKey = 'planMealId';
   static const String startedAtKey = 'planStartedAt';
   static const String finishedKey = 'planFinished';
 
-  /// The id of the planned meal, or null if there is no plan.
   Future<int?> getPlannedMealId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(mealIdKey);
   }
 
-  /// When the plan was started, or null if there is no plan.
   Future<DateTime?> getPlanStartedAt() async {
     final prefs = await SharedPreferences.getInstance();
     final millis = prefs.getInt(startedAtKey);
@@ -24,15 +21,13 @@ class PlanRepository {
     return DateTime.fromMillisecondsSinceEpoch(millis);
   }
 
-  /// True if the user finished the plan.
   Future<bool> isPlanFinished() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(finishedKey) ?? false;
   }
 
-  /// Starts a new plan for a meal. This replaces any old plan.
-  /// The plan starts now, unless a [startedAt] time is given
-  /// (the sample data uses this).
+  // Replaces any old plan. The sample data passes [startedAt]; normally
+  // the plan starts now.
   Future<void> startPlan(int mealId, {DateTime? startedAt}) async {
     final time = startedAt ?? DateTime.now();
     final prefs = await SharedPreferences.getInstance();
@@ -41,14 +36,11 @@ class PlanRepository {
     await prefs.setBool(finishedKey, false);
   }
 
-  /// Marks the plan as finished. The plan stays so the receipt can
-  /// still be seen.
   Future<void> finishPlan() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(finishedKey, true);
   }
 
-  /// Removes the plan (used by Reset).
   Future<void> clearPlan() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(mealIdKey);

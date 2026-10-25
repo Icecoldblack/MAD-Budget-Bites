@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// A centered message shown when a list has nothing to show.
-/// Used on the catalog and history screens.
+// A centered message for a list with nothing to show.
 class EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -21,6 +20,7 @@ class EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final hasButton = actionLabel != null && onAction != null;
 
     return Center(
       child: Padding(
@@ -41,13 +41,12 @@ class EmptyState extends StatelessWidget {
               style: theme.textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
-            if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: 16),
+            if (hasButton) const SizedBox(height: 16),
+            if (hasButton)
               FilledButton.tonal(
                 onPressed: onAction,
                 child: Text(actionLabel!),
               ),
-            ],
           ],
         ),
       ),

@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import '../models/meal.dart';
 import '../utils/money.dart';
 
-/// Shows one meal's name, venue, cuisine, and estimated price.
-/// Used on the catalog list and at the top of the detail screen.
 class MealCard extends StatelessWidget {
   final Meal meal;
   final VoidCallback? onTap;
@@ -30,10 +28,7 @@ class MealCard extends StatelessWidget {
                   children: [
                     Text(meal.name, style: theme.textTheme.titleMedium),
                     const SizedBox(height: 4),
-                    Text(
-                      meal.venueNote,
-                      style: theme.textTheme.bodySmall,
-                    ),
+                    Text(meal.venueNote, style: theme.textTheme.bodySmall),
                     const SizedBox(height: 8),
                     Chip(
                       label: Text(meal.cuisine),

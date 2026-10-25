@@ -3,15 +3,11 @@ import 'package:flutter/material.dart';
 import '../models/purchase.dart';
 import '../utils/money.dart';
 
-/// Compares the plan with what was really paid:
-///   Plan        9.50
-///   Actual      9.75
-///   Difference +0.25 over plan
+// Compares the planned price with what was really paid.
 class ReceiptCard extends StatelessWidget {
-  /// The meal's estimated price when it was planned.
   final int plannedPriceMinor;
 
-  /// The purchase logged for this plan, or null if not bought yet.
+  // Null until the planned meal is bought.
   final Purchase? purchase;
 
   const ReceiptCard({
@@ -23,6 +19,11 @@ class ReceiptCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    String actualText = 'Not bought yet';
+    if (purchase != null) {
+      actualText = formatMinor(purchase!.actualPriceMinor);
+    }
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -40,12 +41,7 @@ class ReceiptCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _buildRow('Plan', formatMinor(plannedPriceMinor)),
-            _buildRow(
-              'Actual',
-              purchase == null
-                  ? 'Not bought yet'
-                  : formatMinor(purchase!.actualPriceMinor),
-            ),
+            _buildRow('Actual', actualText),
             const Divider(),
             _buildDifference(theme),
           ],
@@ -71,7 +67,7 @@ class ReceiptCard extends StatelessWidget {
       return _buildRow('Difference', '-');
     }
 
-    // Positive means the meal cost more than planned.
+    // Positive means it cost more than planned.
     final difference = purchase!.actualPriceMinor - plannedPriceMinor;
 
     String text;

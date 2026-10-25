@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Shows how far along the lunch plan is:
-///   1. Planned  ->  2. Bought  ->  3. Finished
-/// A finished step gets a check mark.
+// Planned -> Bought -> Finished, with a check mark on each step that is done.
 class PlanProgress extends StatelessWidget {
   final bool isBought;
   final bool isFinished;
@@ -19,7 +17,6 @@ class PlanProgress extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          // A plan is always "Planned" once it exists.
           _buildStep(context, 'Planned', true),
           _buildLine(context),
           _buildStep(context, 'Bought', isBought),
@@ -32,14 +29,17 @@ class PlanProgress extends StatelessWidget {
 
   Widget _buildStep(BuildContext context, String label, bool isDone) {
     final theme = Theme.of(context);
-    final color = isDone ? theme.colorScheme.primary : theme.colorScheme.outline;
+
+    Color color = theme.colorScheme.outline;
+    IconData icon = Icons.radio_button_unchecked;
+    if (isDone) {
+      color = theme.colorScheme.primary;
+      icon = Icons.check_circle;
+    }
 
     return Column(
       children: [
-        Icon(
-          isDone ? Icons.check_circle : Icons.radio_button_unchecked,
-          color: color,
-        ),
+        Icon(icon, color: color),
         const SizedBox(height: 4),
         Text(label, style: TextStyle(color: color)),
       ],

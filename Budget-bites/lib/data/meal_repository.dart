@@ -2,20 +2,17 @@ import 'package:sqflite/sqflite.dart';
 
 import '../models/meal.dart';
 
-/// Create, read, update, and delete for the Meal table.
 class MealRepository {
   final Database db;
 
   MealRepository(this.db);
 
-  /// Returns every meal, sorted by name.
   Future<List<Meal>> getAllMeals() async {
     final rows = await db.query('Meal', orderBy: 'name');
     return rows.map((row) => Meal.fromMap(row)).toList();
   }
 
-  /// Returns one meal, or null if no meal has this id
-  /// (for example, because it was deleted).
+  // Returns null if the meal does not exist (for example, it was deleted).
   Future<Meal?> getMealById(int id) async {
     final rows = await db.query('Meal', where: 'id = ?', whereArgs: [id]);
     if (rows.isEmpty) {
@@ -24,9 +21,8 @@ class MealRepository {
     return Meal.fromMap(rows.first);
   }
 
-  /// Returns only the meals of one cuisine, sorted by name.
-  /// COLLATE NOCASE ignores upper and lower case, so "mexican" matches
-  /// "Mexican".
+  // COLLATE NOCASE ignores upper and lower case, so "mexican" matches
+  // "Mexican".
   Future<List<Meal>> getMealsByCuisine(String cuisine) async {
     final rows = await db.query(
       'Meal',
@@ -37,8 +33,7 @@ class MealRepository {
     return rows.map((row) => Meal.fromMap(row)).toList();
   }
 
-  /// Returns each cuisine once, sorted A to Z, for the filter chips.
-  /// "mexican" and "Mexican" count as the same cuisine.
+  // Each cuisine once, A to Z. "mexican" and "Mexican" count as one.
   Future<List<String>> getCuisines() async {
     final rows = await db.rawQuery(
       'SELECT cuisine FROM Meal '
@@ -48,12 +43,11 @@ class MealRepository {
     return rows.map((row) => row['cuisine'] as String).toList();
   }
 
-  /// Saves a new meal and returns the id SQLite gave it.
+  // Returns the id SQLite gave the new meal.
   Future<int> insertMeal(Meal meal) async {
     return db.insert('Meal', meal.toMap());
   }
 
-  /// Saves changes to a meal that is already in the table.
   Future<void> updateMeal(Meal meal) async {
     await db.update(
       'Meal',
@@ -63,8 +57,7 @@ class MealRepository {
     );
   }
 
-  /// Deletes a meal and all of its purchases.
-  /// Both deletes happen together, so we never keep half of them.
+  // Deletes the meal and its purchases together, so we never keep half.
   Future<void> deleteMeal(int id) async {
     await db.transaction((txn) async {
       await txn.delete('PurchaseLog', where: 'mealId = ?', whereArgs: [id]);

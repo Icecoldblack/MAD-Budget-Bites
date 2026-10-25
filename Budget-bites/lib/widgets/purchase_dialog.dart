@@ -5,13 +5,12 @@ import '../models/purchase.dart';
 import '../utils/dates.dart';
 import '../utils/money.dart';
 
-/// A form in a dialog for logging a new purchase or editing one.
-/// It closes with true when the purchase was saved.
+// Logs a new purchase, or edits one. Closes with true when saved.
 class PurchaseDialog extends StatefulWidget {
   final PurchaseRepository purchaseRepository;
   final int mealId;
 
-  /// The purchase to edit. Null when logging a new purchase.
+  // Null when logging a new purchase.
   final Purchase? purchase;
 
   const PurchaseDialog({
@@ -31,9 +30,6 @@ class _PurchaseDialogState extends State<PurchaseDialog> {
   final _noteController = TextEditingController();
   DateTime _purchasedAt = DateTime.now();
   String? _errorMessage;
-
-  /// True while the purchase is being saved. It stops a double tap from
-  /// saving the same purchase twice.
   bool _isSaving = false;
 
   @override
@@ -63,7 +59,7 @@ class _PurchaseDialogState extends State<PurchaseDialog> {
     );
     if (picked == null) return;
 
-    // Keep the time of day and only change the date.
+    // Change the date but keep the time of day.
     setState(() {
       _purchasedAt = DateTime(
         picked.year,
@@ -86,8 +82,8 @@ class _PurchaseDialogState extends State<PurchaseDialog> {
   }
 
   Future<void> _save() async {
-    // A second tap can arrive before the button has turned off.
-    // If a save is already running, ignore the tap.
+    // Double tap guard: a second tap can arrive before the button turns
+    // off, so ignore it while a save is running.
     if (_isSaving) return;
     if (!_formKey.currentState!.validate()) return;
 
@@ -112,7 +108,6 @@ class _PurchaseDialogState extends State<PurchaseDialog> {
       }
     } catch (e) {
       if (!mounted) return;
-      // Turn the button back on so the user can try again.
       setState(() {
         _isSaving = false;
         _errorMessage = 'Could not save. Try again.';
@@ -124,15 +119,17 @@ class _PurchaseDialogState extends State<PurchaseDialog> {
     Navigator.of(context).pop(true);
   }
 
-  String _buttonText(bool isEditing) {
-    if (_isSaving) return 'Saving...';
-    if (isEditing) return 'Save';
-    return 'Log purchase';
-  }
-
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.purchase != null;
+
+    String buttonText = 'Log purchase';
+    if (isEditing) {
+      buttonText = 'Save';
+    }
+    if (_isSaving) {
+      buttonText = 'Saving...';
+    }
 
     return AlertDialog(
       title: Text(isEditing ? 'Edit purchase' : 'Log purchase'),
@@ -180,10 +177,10 @@ class _PurchaseDialogState extends State<PurchaseDialog> {
           onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
           child: const Text('Cancel'),
         ),
+        // onPressed: null turns the button off.
         FilledButton(
-          // Null turns the button off while saving.
           onPressed: _isSaving ? null : _save,
-          child: Text(_buttonText(isEditing)),
+          child: Text(buttonText),
         ),
       ],
     );

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Asks the user to confirm something, like a delete.
-/// Returns true only if they tap the confirm button.
+// Returns true only if the user taps the confirm button.
 Future<bool> showConfirmDialog(
   BuildContext context, {
   required String title,
@@ -25,6 +24,6 @@ Future<bool> showConfirmDialog(
       ],
     ),
   );
-  // Tapping outside the dialog returns null, which counts as "no".
+  // Tapping outside the dialog gives null, which counts as "no".
   return confirmed == true;
 }

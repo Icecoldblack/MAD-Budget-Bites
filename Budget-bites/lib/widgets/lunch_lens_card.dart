@@ -5,13 +5,8 @@ import '../utils/dates.dart';
 import '../utils/lunch_lens.dart';
 import '../utils/money.dart';
 
-/// The Lunch Lens card on the detail screen. It guesses the cost of the
-/// next purchase of a meal and shows the three purchases it used.
-///
-/// It only shows a guess. It never fills in or changes the price the
-/// user types when logging a purchase.
+// Shows the Lunch Lens guess. It never fills in the price the user types.
 class LunchLensCard extends StatelessWidget {
-  /// All purchases of this meal.
   final List<Purchase> purchases;
 
   const LunchLensCard({super.key, required this.purchases});
@@ -83,7 +78,6 @@ class LunchLensCard extends StatelessWidget {
         const SizedBox(height: 8),
         const Text('Moving average of your last three purchases:'),
         const SizedBox(height: 4),
-        // Show the three amounts and dates, so the user can see why.
         for (final purchase in lastThree)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 2),

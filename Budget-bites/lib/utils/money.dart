@@ -1,4 +1,4 @@
-/// Turns a whole number of minor units into a price string, e.g. 650 -> "6.50".
+// 650 -> "6.50", -150 -> "-1.50"
 String formatMinor(int minor) {
   final sign = minor < 0 ? '-' : '';
   final value = minor.abs();
@@ -7,9 +7,8 @@ String formatMinor(int minor) {
   return '$sign$major.$cents';
 }
 
-/// Turns a typed price into minor units, e.g. "6.50" -> 650 and "6" -> 600.
-/// Returns null if the text is not a number, is negative, or has more
-/// than 2 decimal places.
+// "6.50" -> 650, "6" -> 600. Returns null if the text is not a number,
+// is negative, or has more than 2 decimals.
 int? parseMinor(String text) {
   final trimmed = text.trim();
   final value = double.tryParse(trimmed);

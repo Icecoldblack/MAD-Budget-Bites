@@ -16,17 +16,12 @@ import '../widgets/purchase_tile.dart';
 import '../widgets/receipt_card.dart';
 import 'meal_editor_screen.dart';
 
-/// Screen 3: meal detail, receipt card, Lunch Lens, and the plan flow.
-///
-/// It opens in two ways:
-/// - From the Meals tab, with a [meal] to show.
-/// - From the Plan tab, with no meal. Then it shows the planned meal,
-///   or "No plan yet".
+// Screen 3: meal detail, plan, receipt, and Lunch Lens.
+// From the Meals tab it gets a meal. From the Plan tab it gets no meal and
+// shows the planned meal instead, or "No plan yet".
 class MealDetailScreen extends StatefulWidget {
   final MealRepository mealRepository;
   final PurchaseRepository purchaseRepository;
-
-  /// The meal being viewed. Null when opened from the Plan tab.
   final Meal? meal;
 
   const MealDetailScreen({
@@ -45,18 +40,11 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
 
   Meal? _meal;
   List<Purchase> _purchases = [];
-
-  /// The id of the meal in the current plan, or null if there is no plan.
   int? _plannedMealId;
-
-  /// When the current plan was started.
   DateTime? _planStartedAt;
-
-  /// True after the user taps "Finish plan".
   bool _planFinished = false;
   bool _isLoading = true;
 
-  /// True when this screen is the Plan tab.
   bool get _isPlanTab => widget.meal == null;
 
   @override
@@ -66,18 +54,17 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     _load();
   }
 
-  /// Loads the plan, the meal (on the Plan tab), and the meal's purchases.
   Future<void> _load() async {
     final plannedMealId = await _planRepository.getPlannedMealId();
     final planStartedAt = await _planRepository.getPlanStartedAt();
     final planFinished = await _planRepository.isPlanFinished();
 
-    var meal = _meal;
+    Meal? meal = _meal;
     if (_isPlanTab && plannedMealId != null) {
       meal = await widget.mealRepository.getMealById(plannedMealId);
     }
 
-    var purchases = <Purchase>[];
+    List<Purchase> purchases = [];
     if (meal != null) {
       purchases = await widget.purchaseRepository.getPurchasesForMeal(
         meal.id!,
@@ -98,8 +85,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
   Future<void> _startPlan() async {
     final meal = _meal!;
 
-    // Planning a different meal replaces the old plan, so ask first.
-    // A finished plan is done, so it can be replaced without asking.
+    // Ask before replacing a plan that is not finished yet.
     if (_plannedMealId != null && _plannedMealId != meal.id && !_planFinished) {
       final confirmed = await showConfirmDialog(
         context,
@@ -124,7 +110,6 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     );
   }
 
-  /// Ends the plan after the meal was bought. Every progress step is done.
   Future<void> _finishPlan() async {
     await _planRepository.finishPlan();
     if (!mounted) return;
@@ -134,7 +119,6 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     );
   }
 
-  /// Removes the plan after asking. Purchases are kept.
   Future<void> _resetPlan() async {
     final confirmed = await showConfirmDialog(
       context,
@@ -152,7 +136,6 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
       _plannedMealId = null;
       _planStartedAt = null;
       _planFinished = false;
-      // The Plan tab has no meal without a plan, so it shows "No plan yet".
       if (_isPlanTab) {
         _meal = null;
         _purchases = [];
@@ -160,15 +143,13 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     });
   }
 
-  /// The purchase that counts for the plan: the newest purchase of this
-  /// meal made after the plan was started. Null if there is none yet.
-  Purchase? _planPurchase() {
-    final startedAt = _planStartedAt;
-    if (startedAt == null) return null;
+  // The newest purchase made after the plan started, or null.
+  // _purchases is newest first, so the first match is the newest.
+  Purchase? _findPlanPurchase() {
+    if (_planStartedAt == null) return null;
 
-    // _purchases is sorted newest first, so the first match is the newest.
     for (final purchase in _purchases) {
-      if (!purchase.purchasedAt.isBefore(startedAt)) {
+      if (!purchase.purchasedAt.isBefore(_planStartedAt!)) {
         return purchase;
       }
     }
@@ -176,6 +157,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
   }
 
   Future<void> _editMeal() async {
+    // The editor gives back the saved meal, or null if the user went back.
     final updatedMeal = await Navigator.of(context).push<Meal>(
       MaterialPageRoute(
         builder: (_) => MealEditorScreen(
@@ -185,7 +167,6 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
       ),
     );
 
-    // The editor hands back the saved meal, or null if the user went back.
     if (updatedMeal != null) {
       setState(() => _meal = updatedMeal);
     }
@@ -194,12 +175,11 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
   Future<void> _deleteMeal() async {
     final meal = _meal!;
 
-    // Tell the user how many purchases will be deleted with the meal.
     final count =
         await widget.purchaseRepository.countPurchasesForMeal(meal.id!);
     if (!mounted) return;
 
-    var message = '${meal.name} will be deleted.';
+    String message = '${meal.name} will be deleted.';
     if (count == 1) {
       message = '$message Its 1 purchase will also be deleted.';
     } else if (count > 1) {
@@ -214,8 +194,6 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     if (!confirmed) return;
 
     await widget.mealRepository.deleteMeal(meal.id!);
-
-    // A deleted meal can't stay in the plan.
     if (_plannedMealId == meal.id) {
       await _planRepository.clearPlan();
     }
@@ -235,8 +213,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     }
   }
 
-  /// Opens the purchase form. Pass a purchase to edit it, or null to log
-  /// a new one.
+  // Pass null to log a new purchase, or a purchase to edit it.
   Future<void> _openPurchaseDialog(Purchase? purchase) async {
     final saved = await showDialog<bool>(
       context: context,
@@ -273,10 +250,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
       );
     }
 
-    final meal = _meal;
-
-    // Only happens on the Plan tab.
-    if (meal == null) {
+    if (_meal == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Plan')),
         body: const EmptyState(
@@ -286,6 +260,10 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
         ),
       );
     }
+
+    final meal = _meal!;
+    final isPlanned = _plannedMealId == meal.id;
+    final planPurchase = _findPlanPurchase();
 
     return Scaffold(
       appBar: AppBar(
@@ -307,20 +285,18 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
           MealCard(meal: meal),
-          _buildPlanButton(meal),
-          // The progress, receipt, and plan buttons only show for the
-          // planned meal.
-          if (_plannedMealId == meal.id)
+          if (isPlanned) _buildPlanLabel() else _buildPlanButton(),
+          if (isPlanned)
             PlanProgress(
-              isBought: _planPurchase() != null,
+              isBought: planPurchase != null,
               isFinished: _planFinished,
             ),
-          if (_plannedMealId == meal.id)
+          if (isPlanned)
             ReceiptCard(
               plannedPriceMinor: meal.estimatedPriceMinor,
-              purchase: _planPurchase(),
+              purchase: planPurchase,
             ),
-          if (_plannedMealId == meal.id) _buildPlanActions(),
+          if (isPlanned) _buildPlanActions(planPurchase != null),
           LunchLensCard(purchases: _purchases),
           Padding(
             padding: const EdgeInsets.all(16),
@@ -354,27 +330,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     );
   }
 
-  /// "Plan this meal", or a label if this meal is already the plan.
-  Widget _buildPlanButton(Meal meal) {
-    if (_plannedMealId == meal.id) {
-      final theme = Theme.of(context);
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children: [
-            Icon(Icons.check_circle, color: theme.colorScheme.primary),
-            const SizedBox(width: 8),
-            Text(
-              _planFinished ? 'Plan finished' : 'This is your lunch plan',
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
+  Widget _buildPlanButton() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: OutlinedButton.icon(
@@ -385,10 +341,27 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     );
   }
 
-  /// The "Finish plan" and "Reset plan" buttons.
-  Widget _buildPlanActions() {
-    final isBought = _planPurchase() != null;
+  Widget _buildPlanLabel() {
+    final theme = Theme.of(context);
 
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Icon(Icons.check_circle, color: theme.colorScheme.primary),
+          const SizedBox(width: 8),
+          Text(
+            _planFinished ? 'Plan finished' : 'This is your lunch plan',
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: theme.colorScheme.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlanActions(bool isBought) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -396,11 +369,10 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
         children: [
           Row(
             children: [
-              // A finished plan can't be finished again.
               if (!_planFinished)
                 Expanded(
                   child: FilledButton.icon(
-                    // Off until the meal is bought.
+                    // Off until the planned meal is bought.
                     onPressed: isBought ? _finishPlan : null,
                     icon: const Icon(Icons.flag),
                     label: const Text('Finish plan'),

@@ -1,20 +1,14 @@
-// Lunch Lens: guesses what the next purchase of a meal will cost.
-//
-// It is a simple rule, not a trained model:
-//   estimate = the average of the last three purchases of the meal.
-//
-// Only purchases made before [before] are used, so a later purchase
-// can never affect the guess for an earlier one.
+// Lunch Lens guesses the cost of the next purchase of a meal.
+// It is a simple rule, not a trained model: the average of the last
+// three purchases made before [before].
 
 import '../models/purchase.dart';
 
-/// Returns the three most recent purchases made before [before],
-/// newest first. Returns fewer than three if there aren't enough.
-///
-/// Purchases made at the same time are ordered by id: a higher id was
-/// logged later. Negative prices are not valid, so they are skipped.
+// The three newest purchases before [before], newest first.
+// Same time: the higher id was logged later, so it comes first.
+// Negative prices are invalid and skipped.
 List<Purchase> lastThreePurchases(List<Purchase> purchases, DateTime before) {
-  final earlier = <Purchase>[];
+  List<Purchase> earlier = [];
   for (final purchase in purchases) {
     if (purchase.purchasedAt.isBefore(before) &&
         purchase.actualPriceMinor >= 0) {
@@ -22,8 +16,6 @@ List<Purchase> lastThreePurchases(List<Purchase> purchases, DateTime before) {
     }
   }
 
-  // Newest first. If two purchases have the same time, the higher id
-  // comes first.
   earlier.sort((a, b) {
     if (a.purchasedAt == b.purchasedAt) {
       return b.id!.compareTo(a.id!);
@@ -37,11 +29,7 @@ List<Purchase> lastThreePurchases(List<Purchase> purchases, DateTime before) {
   return earlier;
 }
 
-/// The Lunch Lens estimate: the average of the last three purchases,
-/// rounded to the nearest whole unit (halves round up).
-///
-/// Returns null when there are fewer than three earlier purchases.
-/// The card then says "Not enough history".
+// The Lunch Lens estimate. Null means "Not enough history".
 int? averageOfLastThree(List<Purchase> purchases, DateTime before) {
   final lastThree = lastThreePurchases(purchases, before);
   if (lastThree.length < 3) {
@@ -56,10 +44,7 @@ int? averageOfLastThree(List<Purchase> purchases, DateTime before) {
   return (sum / 3).round();
 }
 
-/// The simple baseline to compare against: the next purchase will cost
-/// the same as the most recent one.
-///
-/// Returns null when there are no earlier purchases.
+// The baseline: the next price will be the same as the last one.
 int? lastPriceBaseline(List<Purchase> purchases, DateTime before) {
   final lastThree = lastThreePurchases(purchases, before);
   if (lastThree.isEmpty) {
@@ -68,17 +53,14 @@ int? lastPriceBaseline(List<Purchase> purchases, DateTime before) {
   return lastThree[0].actualPriceMinor;
 }
 
-/// The alternative from the proposal: the middle value of the last three
-/// purchases. One very high price does not pull it up.
-///
-/// Returns null when there are fewer than three earlier purchases.
+// The alternative: the middle of the last three prices.
 int? medianOfLastThree(List<Purchase> purchases, DateTime before) {
   final lastThree = lastThreePurchases(purchases, before);
   if (lastThree.length < 3) {
     return null;
   }
 
-  final prices = [
+  List<int> prices = [
     lastThree[0].actualPriceMinor,
     lastThree[1].actualPriceMinor,
     lastThree[2].actualPriceMinor,

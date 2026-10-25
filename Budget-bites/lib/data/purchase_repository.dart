@@ -2,14 +2,12 @@ import 'package:sqflite/sqflite.dart';
 
 import '../models/purchase.dart';
 
-/// Create, read, update, and delete for the PurchaseLog table.
+// Every list is newest first. Purchases at the same time are ordered by id.
 class PurchaseRepository {
   final Database db;
 
   PurchaseRepository(this.db);
 
-  /// Returns every purchase, newest first.
-  /// Purchases at the same time are ordered by id.
   Future<List<Purchase>> getAllPurchases() async {
     final rows = await db.query(
       'PurchaseLog',
@@ -18,8 +16,7 @@ class PurchaseRepository {
     return rows.map((row) => Purchase.fromMap(row)).toList();
   }
 
-  /// Returns the purchases from [from] up to (but not including) [to],
-  /// newest first.
+  // From [from] up to, but not including, [to].
   Future<List<Purchase>> getPurchasesInRange(DateTime from, DateTime to) async {
     final rows = await db.query(
       'PurchaseLog',
@@ -30,16 +27,14 @@ class PurchaseRepository {
     return rows.map((row) => Purchase.fromMap(row)).toList();
   }
 
-  /// Adds up every purchase ever made, in minor units.
+  // COALESCE turns "no purchases" (NULL) into 0.
   Future<int> getTotalSpent() async {
-    // COALESCE turns "no rows" (NULL) into 0.
     final rows = await db.rawQuery(
       'SELECT COALESCE(SUM(actualPriceMinor), 0) AS total FROM PurchaseLog',
     );
     return rows.first['total'] as int;
   }
 
-  /// Adds up the purchases from [from] up to (but not including) [to].
   Future<int> getTotalSpentInRange(DateTime from, DateTime to) async {
     final rows = await db.rawQuery(
       'SELECT COALESCE(SUM(actualPriceMinor), 0) AS total FROM PurchaseLog '
@@ -49,7 +44,6 @@ class PurchaseRepository {
     return rows.first['total'] as int;
   }
 
-  /// Returns the purchases of one meal, newest first.
   Future<List<Purchase>> getPurchasesForMeal(int mealId) async {
     final rows = await db.query(
       'PurchaseLog',
@@ -60,7 +54,6 @@ class PurchaseRepository {
     return rows.map((row) => Purchase.fromMap(row)).toList();
   }
 
-  /// How many purchases a meal has. Used to warn before deleting a meal.
   Future<int> countPurchasesForMeal(int mealId) async {
     final rows = await db.rawQuery(
       'SELECT COUNT(*) AS total FROM PurchaseLog WHERE mealId = ?',
@@ -69,12 +62,11 @@ class PurchaseRepository {
     return rows.first['total'] as int;
   }
 
-  /// Saves a new purchase and returns the id SQLite gave it.
+  // Returns the id SQLite gave the new purchase.
   Future<int> insertPurchase(Purchase purchase) async {
     return db.insert('PurchaseLog', purchase.toMap());
   }
 
-  /// Saves changes to a purchase that is already in the table.
   Future<void> updatePurchase(Purchase purchase) async {
     await db.update(
       'PurchaseLog',

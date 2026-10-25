@@ -10,7 +10,7 @@ import '../widgets/empty_state.dart';
 import '../widgets/purchase_dialog.dart';
 import '../widgets/purchase_tile.dart';
 
-/// Screen 4: date range, total spent, and the purchase list.
+// Screen 4: date range, total spent, and the purchase list.
 class HistoryScreen extends StatefulWidget {
   final MealRepository mealRepository;
   final PurchaseRepository purchaseRepository;
@@ -29,10 +29,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   List<Purchase> _purchases = [];
   int _totalSpentMinor = 0;
 
-  /// The chosen dates. Null means "All time".
+  // Null means "All time".
   DateTimeRange? _range;
 
-  /// Meal names by meal id, so each purchase can show its meal's name.
+  // Meal name for each meal id.
   Map<int, String> _mealNames = {};
   bool _isLoading = true;
 
@@ -43,27 +43,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _loadPurchases() async {
-    final range = _range;
     List<Purchase> purchases;
     int total;
 
-    if (range == null) {
+    if (_range == null) {
       purchases = await widget.purchaseRepository.getAllPurchases();
       total = await widget.purchaseRepository.getTotalSpent();
     } else {
-      // The range picker gives the last day at midnight. Add one day so
-      // purchases made during the last day are included.
-      final from = range.start;
-      final to = DateTime(range.end.year, range.end.month, range.end.day + 1);
-      purchases = await widget.purchaseRepository.getPurchasesInRange(
-        from,
-        to,
-      );
+      // The picker gives the last day at midnight. Add a day so purchases
+      // made during the last day count too.
+      final from = _range!.start;
+      final end = _range!.end;
+      final to = DateTime(end.year, end.month, end.day + 1);
+      purchases = await widget.purchaseRepository.getPurchasesInRange(from, to);
       total = await widget.purchaseRepository.getTotalSpentInRange(from, to);
     }
 
     final meals = await widget.mealRepository.getAllMeals();
-    final mealNames = <int, String>{};
+    Map<int, String> mealNames = {};
     for (final meal in meals) {
       mealNames[meal.id!] = meal.name;
     }
@@ -135,7 +132,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    // No dates picked and still nothing: the user has never logged a purchase.
     if (_range == null && _purchases.isEmpty) {
       return const EmptyState(
         icon: Icons.receipt_long,
@@ -155,13 +151,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Widget _buildTotalCard() {
     final theme = Theme.of(context);
-    final range = _range;
 
-    String periodText;
-    if (range == null) {
-      periodText = 'All time';
-    } else {
-      periodText = '${formatDate(range.start)} to ${formatDate(range.end)}';
+    String periodText = 'All time';
+    if (_range != null) {
+      periodText =
+          '${formatDate(_range!.start)} to ${formatDate(_range!.end)}';
     }
 
     return Card(
@@ -188,7 +182,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   onPressed: _pickRange,
                   child: const Text('Change dates'),
                 ),
-                if (range != null)
+                if (_range != null)
                   TextButton(
                     onPressed: _showAllTime,
                     child: const Text('All time'),

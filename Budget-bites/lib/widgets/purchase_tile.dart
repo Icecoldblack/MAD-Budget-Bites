@@ -4,12 +4,8 @@ import '../models/purchase.dart';
 import '../utils/dates.dart';
 import '../utils/money.dart';
 
-/// One row in a list of purchases. Tap it to edit, or tap the bin to delete.
-/// Used on the detail screen and the history screen.
 class PurchaseTile extends StatelessWidget {
   final Purchase purchase;
-
-  /// The main text, e.g. the meal name on the history screen.
   final String title;
   final VoidCallback onTap;
   final VoidCallback onDelete;
@@ -24,7 +20,7 @@ class PurchaseTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var subtitle = formatDate(purchase.purchasedAt);
+    String subtitle = formatDate(purchase.purchasedAt);
     if (purchase.note.isNotEmpty) {
       subtitle = '$subtitle  •  ${purchase.note}';
     }

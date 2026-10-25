@@ -10,7 +10,7 @@ import '../widgets/meal_card.dart';
 import 'meal_detail_screen.dart';
 import 'meal_editor_screen.dart';
 
-/// Screen 1: list of meals, cuisine filter, and budget left.
+// Screen 1: list of meals, cuisine filter, and budget left today.
 class CatalogScreen extends StatefulWidget {
   final MealRepository mealRepository;
   final PurchaseRepository purchaseRepository;
@@ -26,18 +26,14 @@ class CatalogScreen extends StatefulWidget {
 }
 
 class _CatalogScreenState extends State<CatalogScreen> {
-  /// The meals shown in the list (already filtered by cuisine).
   List<Meal> _meals = [];
-
-  /// Every cuisine, used to build the filter chips.
   List<String> _cuisines = [];
   bool _isLoading = true;
   String? _errorMessage;
 
-  /// Null means "All" cuisines.
+  // Null means "All".
   String? _selectedCuisine;
 
-  /// The daily budget from Settings and what was spent today.
   int _dailyBudgetMinor = 0;
   int _spentTodayMinor = 0;
 
@@ -47,7 +43,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
     _loadMeals();
   }
 
-  /// Loads the cuisines, the meals for the selected cuisine, and the budget.
   Future<void> _loadMeals() async {
     try {
       final cuisines = await widget.mealRepository.getCuisines();
@@ -88,7 +83,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
     }
   }
 
-  /// Called when a filter chip is tapped. Null means "All".
   void _selectCuisine(String? cuisine) {
     setState(() => _selectedCuisine = cuisine);
     _loadMeals();
@@ -100,7 +94,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
         builder: (_) => MealEditorScreen(mealRepository: widget.mealRepository),
       ),
     );
-    // Reload in case a meal was added.
     _loadMeals();
   }
 
@@ -114,7 +107,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
         ),
       ),
     );
-    // Reload in case the meal was edited or deleted.
     _loadMeals();
   }
 
@@ -146,7 +138,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
       );
     }
 
-    // No filter and still no meals means the table is empty.
     if (_selectedCuisine == null && _meals.isEmpty) {
       return EmptyState(
         icon: Icons.restaurant_menu,
@@ -166,8 +157,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
     );
   }
 
-  /// Shows how much of today's budget is left, e.g. "Budget left today:
-  /// 3.75 of 10.00". It turns red when the budget is overspent.
   Widget _buildBudgetLeft() {
     final theme = Theme.of(context);
     final leftMinor = _dailyBudgetMinor - _spentTodayMinor;
@@ -231,7 +220,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
     }
 
     return ListView.builder(
-      // Bottom padding keeps the last card clear of the add button.
+      // Space at the bottom so the add button doesn't cover the last card.
       padding: const EdgeInsets.only(top: 4, bottom: 88),
       itemCount: _meals.length,
       itemBuilder: (context, index) {

@@ -4,11 +4,11 @@ import '../data/meal_repository.dart';
 import '../models/meal.dart';
 import '../utils/money.dart';
 
-/// Screen 2: one form for creating a new meal or editing an existing one.
+// Screen 2: one form to add a new meal or edit an existing one.
 class MealEditorScreen extends StatefulWidget {
   final MealRepository mealRepository;
 
-  /// The meal to edit. Null when adding a new meal.
+  // Null when adding a new meal.
   final Meal? meal;
 
   const MealEditorScreen({super.key, required this.mealRepository, this.meal});
@@ -23,8 +23,6 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
   final _venueController = TextEditingController();
   final _cuisineController = TextEditingController();
   final _priceController = TextEditingController();
-
-  /// True while the meal is being saved. The Save button is off then.
   bool _isSaving = false;
 
   @override
@@ -80,7 +78,7 @@ class _MealEditorScreenState extends State<MealEditorScreen> {
     setState(() => _isSaving = false);
 
     if (Navigator.of(context).canPop()) {
-      // Opened from another screen: go back and hand over the saved meal.
+      // Opened from another screen: go back with the saved meal.
       Navigator.of(context).pop(meal);
     } else {
       // Opened from the Add tab: clear the form for the next meal.

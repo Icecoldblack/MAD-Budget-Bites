@@ -8,7 +8,7 @@ import 'meal_detail_screen.dart';
 import 'meal_editor_screen.dart';
 import 'settings_screen.dart';
 
-/// Holds the bottom tab bar and switches between the five main screens.
+// The bottom tab bar with the five main screens.
 class HomeShell extends StatefulWidget {
   final MealRepository mealRepository;
   final PurchaseRepository purchaseRepository;
@@ -28,9 +28,8 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
-    // A screen is rebuilt each time its tab is opened, so it always
-    // loads the latest data from the database.
-    final screens = [
+    // Each screen is rebuilt when its tab is opened, so it loads fresh data.
+    List<Widget> screens = [
       CatalogScreen(
         mealRepository: widget.mealRepository,
         purchaseRepository: widget.purchaseRepository,

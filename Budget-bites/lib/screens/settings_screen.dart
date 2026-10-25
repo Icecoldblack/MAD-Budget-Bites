@@ -7,7 +7,7 @@ import '../data/settings_repository.dart';
 import '../utils/money.dart';
 import '../widgets/confirm_dialog.dart';
 
-/// Screen 5: daily budget slider and display option.
+// Screen 5: daily budget slider, saved with SharedPreferences.
 class SettingsScreen extends StatefulWidget {
   final MealRepository mealRepository;
   final PurchaseRepository purchaseRepository;
@@ -23,10 +23,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  /// The slider goes from 0.00 to 30.00 in steps of 0.50.
-  static const int maxBudgetMinor = 3000;
-  static const int stepMinor = 50;
-
   final _settings = SettingsRepository();
   int _dailyBudgetMinor = SettingsRepository.defaultDailyBudgetMinor;
   bool _isLoading = true;
@@ -83,7 +79,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Text('Daily lunch budget', style: theme.textTheme.titleMedium),
           const SizedBox(height: 4),
-          // The number is shown in text, not only by the slider position.
           Text(
             formatMinor(_dailyBudgetMinor),
             style: theme.textTheme.headlineMedium?.copyWith(
@@ -91,17 +86,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
+          // 0.00 to 30.00 in steps of 0.50 (60 steps).
           Slider(
             value: _dailyBudgetMinor.toDouble(),
             min: 0,
-            max: maxBudgetMinor.toDouble(),
-            divisions: maxBudgetMinor ~/ stepMinor,
+            max: 3000,
+            divisions: 60,
             label: formatMinor(_dailyBudgetMinor),
-            // Update the number while dragging...
             onChanged: (value) {
               setState(() => _dailyBudgetMinor = value.round());
             },
-            // ...and save only when the user lets go.
+            // Save only when the user lets go of the slider.
             onChangeEnd: (value) {
               _settings.setDailyBudget(value.round());
             },
